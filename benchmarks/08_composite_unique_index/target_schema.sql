@@ -1,0 +1,1 @@
+CREATE TABLE tags (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT, UNIQUE(item_id, tag_name));

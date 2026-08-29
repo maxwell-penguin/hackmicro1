@@ -1,0 +1,2 @@
+CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);
+CREATE TABLE addresses (id INTEGER PRIMARY KEY, user_id INTEGER, street TEXT, city TEXT, FOREIGN KEY(user_id) REFERENCES users(id));
