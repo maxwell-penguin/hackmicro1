@@ -10,13 +10,31 @@ exhausting all attempts report the right outcome, does a no-drift case
 short-circuit before ever calling the LLM.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from src.agents.synthesizer import SynthesisResult
 from src.core.guardian import MigrationManifest
 from src.orchestrator import run_case
+
+
+@pytest.fixture(autouse=True)
+def _isolate_trajectory_output_dir(tmp_path):
+    """run_case() writes trajectories to a relative 'trajectories/advanced'
+    path (see src/orchestrator.py) -- chdir into tmp_path for every test in
+    this file so pytest never writes into the repo's real trajectories/
+    directory. Same os.chdir(tmp_path) pattern this file used to apply to
+    a single test only; now applied to all of them via one autouse fixture."""
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        yield
+    finally:
+        os.chdir(original_cwd)
 
 
 def _make_case(tmp_path: Path, name: str, physical_sql: str, seed_sql: str, target_sql: str) -> Path:
@@ -135,7 +153,6 @@ def test_no_drift_short_circuits_without_calling_synthesizer(tmp_path):
 
 def test_trajectory_is_written_and_reports_success_outcome(tmp_path):
     import json
-    import os
 
     case_dir = _make_case(
         tmp_path,
@@ -148,14 +165,9 @@ def test_trajectory_is_written_and_reports_success_outcome(tmp_path):
         [_result("ALTER TABLE users RENAME COLUMN user_name TO full_name;")]
     )
 
-    original_cwd = os.getcwd()
-    os.chdir(tmp_path)
-    try:
-        result = run_case(case_dir, synthesizer=synth)
-        assert result.trajectory_path is not None
-        with open(result.trajectory_path) as f:
-            record = json.load(f)
-        assert record["outcome"] == "success"
-        assert len(record["steps"]) > 0
-    finally:
-        os.chdir(original_cwd)
+    result = run_case(case_dir, synthesizer=synth)
+    assert result.trajectory_path is not None
+    with open(result.trajectory_path) as f:
+        record = json.load(f)
+    assert record["outcome"] == "success"
+    assert len(record["steps"]) > 0

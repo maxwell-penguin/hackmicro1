@@ -60,7 +60,8 @@ tracking, declared row-count decrease, declared column drop).
 4. **Data Loss Guardian** (deterministic, no LLM) — snapshots database
    content before and after, and fails the migration if anything
    disappeared that wasn't declared in the manifest.
-5. **Constraint Resolver** — on failure (SQL error or
+5. **Retry loop** (implemented as a plain loop inside `orchestrator.py`,
+   not a separate class) — on failure (SQL error or
    `DATA_LOSS_DETECTED`), feeds the error back to the Synthesizer for
    a corrected attempt, up to a retry cap.
 
@@ -85,9 +86,9 @@ tracking, declared row-count decrease, declared column drop).
 
 | Case | Baseline | Advanced | Improved? |
 |---|---|---|---|
-| 01_simple_add | ok | success |  |
-| 02_rename_column_with_data | ok | success |  |
-| 03_type_migration | ok | success |  |
+| 01_simple_add | ok | success | — |
+| 02_rename_column_with_data | ok | success | — |
+| 03_type_migration | ok | success | — |
 | 05_table_split | SQL error | success | ✓ |
 | 08_composite_unique_index | DATA LOSS | success | ✓ |
 | 10_safe_deprecation | DATA LOSS | success | ✓ |

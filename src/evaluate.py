@@ -49,6 +49,10 @@ def _advanced_verdict(entry: dict) -> str:
     return entry["outcome"]
 
 
+def _is_improved(b_verdict: str, a_verdict: str) -> bool:
+    return b_verdict != "ok" and a_verdict == "success"
+
+
 def main() -> None:
     baseline = _load("baseline_results.json")
     advanced = _load("advanced_results.json")
@@ -69,7 +73,7 @@ def main() -> None:
     for case_name in all_cases:
         b_verdict = _baseline_verdict(baseline.get(case_name))
         a_verdict = _advanced_verdict(advanced.get(case_name))
-        improved = b_verdict != "ok" and a_verdict == "success"
+        improved = _is_improved(b_verdict, a_verdict)
         if improved:
             improved_count += 1
 

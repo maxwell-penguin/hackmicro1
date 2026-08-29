@@ -4,7 +4,7 @@ src/cli.py
 Command-line entry point for MigraLoop. Wraps the baseline runner and
 the advanced orchestrator loop into the two commands the micro1 rubric
 requires -- the Makefile's `make baseline` and `make advanced` targets
-call this as `python src/cli.py run-baseline --all` /
+call this as `python -m src.cli run-baseline --all` /
 `run-advanced --all`.
 """
 

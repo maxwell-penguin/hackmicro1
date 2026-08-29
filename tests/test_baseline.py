@@ -9,11 +9,28 @@ the SQL executed without error, which is the entire point of running
 it at all.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import pytest
+
 from src.baseline import run_baseline_case
+
+
+@pytest.fixture(autouse=True)
+def _isolate_trajectory_output_dir(tmp_path):
+    """run_baseline_case() writes trajectories to a relative
+    'trajectories/baseline' path (see src/baseline.py) -- chdir into
+    tmp_path for every test in this file so pytest never writes into the
+    repo's real trajectories/ directory."""
+    original_cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        yield
+    finally:
+        os.chdir(original_cwd)
 
 
 def _make_case(tmp_path: Path, name: str, physical_sql: str, seed_sql: str, target_sql: str) -> Path:
@@ -77,12 +94,6 @@ def test_baseline_records_clean_success_when_sql_happens_to_be_safe(tmp_path):
 
     assert result.sql_succeeded is True
     assert result.data_loss_detected is False
-
-
-def test_baseline_records_sql_error():
-    pass  # exercised implicitly below; kept as a named placeholder so
-    # a reader scanning test names sees this path is intentionally
-    # covered rather than missing.
 
 
 def test_baseline_records_outright_sql_failure(tmp_path):
