@@ -9,6 +9,8 @@ clean failure).
 """
 
 import os
+import sqlite3
+import tempfile
 
 import pytest
 
@@ -113,3 +115,54 @@ def test_sandboxes_are_isolated_from_each_other():
             # sb_b never had `t` created -- confirms no shared file/state
             tables_b = sb_b.list_tables()
             assert "t" not in tables_b
+
+
+def test_provision_from_source_db_file_copies_data():
+    """The orchestrator loads pre-built benchmark physical.db files this
+    way -- confirm the sandbox actually gets a working copy of the real
+    schema and seed data, not an empty database."""
+    source_conn = sqlite3.connect(":memory:")
+    # can't copy an in-memory db by path, so build a real temp file
+    fd, source_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    source_conn.close()
+    seed_conn = sqlite3.connect(source_path)
+    seed_conn.executescript(
+        "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);"
+        "INSERT INTO users (name) VALUES ('Alice');"
+    )
+    seed_conn.close()
+
+    sb = SandboxVerifier("from_file_test")
+    try:
+        sb.provision(source_db_path=source_path)
+        rows = sb.connection.execute("SELECT name FROM users;").fetchall()
+        assert rows == [("Alice",)]
+    finally:
+        sb.teardown()
+        os.remove(source_path)
+
+
+def test_provision_from_source_db_file_does_not_mutate_source():
+    fd, source_path = tempfile.mkstemp(suffix=".db")
+    os.close(fd)
+    seed_conn = sqlite3.connect(source_path)
+    seed_conn.executescript(
+        "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT);"
+        "INSERT INTO users (name) VALUES ('Alice');"
+    )
+    seed_conn.close()
+
+    sb = SandboxVerifier("mutation_test")
+    try:
+        sb.provision(source_db_path=source_path)
+        sb.apply_migration("ALTER TABLE users ADD COLUMN email TEXT;")
+
+        # the ORIGINAL file must be untouched
+        check_conn = sqlite3.connect(source_path)
+        cols = [row[1] for row in check_conn.execute("PRAGMA table_info(users);")]
+        check_conn.close()
+        assert "email" not in cols
+    finally:
+        sb.teardown()
+        os.remove(source_path)

@@ -12,6 +12,7 @@ isolation from any other case or run.
 from __future__ import annotations
 
 import os
+import shutil
 import sqlite3
 import tempfile
 import uuid
@@ -60,16 +61,29 @@ class SandboxVerifier:
     def __exit__(self, exc_type, exc, tb):
         self.teardown()
 
-    def provision(self) -> None:
-        """Create a fresh database file/connection for this sandbox."""
+    def provision(self, source_db_path: Optional[str] = None) -> None:
+        """
+        Create a fresh database file/connection for this sandbox. If
+        source_db_path is given, the sandbox's temp file starts as a
+        byte-for-byte copy of that file (used to load a pre-built
+        benchmark case's physical.db) instead of an empty database —
+        the source file itself is never opened or mutated directly.
+        """
         if self._use_temp_file:
             fd, path = tempfile.mkstemp(
                 prefix=f"migraloop_{self.case_name}_{uuid.uuid4().hex[:8]}_",
                 suffix=".db",
             )
             os.close(fd)
+            if source_db_path:
+                shutil.copy2(source_db_path, path)
             self._db_path = path
         else:
+            if source_db_path:
+                raise SandboxError(
+                    "source_db_path requires use_temp_file=True "
+                    "(an in-memory database can't be seeded from a file copy)"
+                )
             self._db_path = ":memory:"
 
         self._conn = sqlite3.connect(self._db_path)

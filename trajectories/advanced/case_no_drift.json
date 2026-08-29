@@ -1,0 +1,24 @@
+{
+  "case_name": "case_no_drift",
+  "run_id": "f12e51b2aae7",
+  "started_at": 1788022956.721689,
+  "ended_at": 1788022956.722722,
+  "outcome": "no_drift",
+  "attempt_count": 0,
+  "steps": [
+    {
+      "step_id": "d42291eb",
+      "kind": "reasoning",
+      "agent": "state_extractor",
+      "action": "extract_drift",
+      "timestamp": 1788022956.722719,
+      "input_data": {},
+      "output_data": {
+        "has_drift": false,
+        "summary": "SCHEMA DRIFT REPORT\n====================\n\n(no drift detected)"
+      },
+      "error_type": null,
+      "error_message": null
+    }
+  ]
+}

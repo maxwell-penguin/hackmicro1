@@ -1,0 +1,211 @@
+{
+  "case_name": "case_always_bad",
+  "run_id": "6c458e2673d2",
+  "started_at": 1788022956.713921,
+  "ended_at": 1788022956.718872,
+  "outcome": "failed_max_retries",
+  "attempt_count": 2,
+  "steps": [
+    {
+      "step_id": "6b3ea9a3",
+      "kind": "reasoning",
+      "agent": "state_extractor",
+      "action": "extract_drift",
+      "timestamp": 1788022956.7148218,
+      "input_data": {},
+      "output_data": {
+        "has_drift": true,
+        "summary": "SCHEMA DRIFT REPORT\n====================\n\nTable: users [modified]\n  + column added: full_name TEXT\n  - column removed: user_name TEXT\n"
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "9324f3a2",
+      "kind": "tool_call",
+      "agent": "migration_synthesizer",
+      "action": "synthesize",
+      "timestamp": 1788022956.7148328,
+      "input_data": {
+        "attempt": 1,
+        "prior_error": null
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "b8f8afe0",
+      "kind": "environment_response",
+      "agent": "migration_synthesizer",
+      "action": "synthesize_result",
+      "timestamp": 1788022956.71487,
+      "input_data": {},
+      "output_data": {
+        "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
+        "reasoning": "test"
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "8267afc3",
+      "kind": "tool_call",
+      "agent": "sandbox_verifier",
+      "action": "apply_migration",
+      "timestamp": 1788022956.715987,
+      "input_data": {},
+      "output_data": {
+        "success": true,
+        "error": null
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "eef76c56",
+      "kind": "error",
+      "agent": "data_loss_guardian",
+      "action": "error",
+      "timestamp": 1788022956.716083,
+      "input_data": {},
+      "output_data": {},
+      "error_type": "DataLossDetected",
+      "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
+    },
+    {
+      "step_id": "6422240b",
+      "kind": "self_correction",
+      "agent": "orchestrator",
+      "action": "self_correction",
+      "timestamp": 1788022956.7160919,
+      "input_data": {
+        "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']",
+        "strategy": "retry with data-loss report fed back to synthesizer"
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "b58309ee",
+      "kind": "tool_call",
+      "agent": "migration_synthesizer",
+      "action": "synthesize",
+      "timestamp": 1788022956.716225,
+      "input_data": {
+        "attempt": 2,
+        "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "93c94d7a",
+      "kind": "environment_response",
+      "agent": "migration_synthesizer",
+      "action": "synthesize_result",
+      "timestamp": 1788022956.716268,
+      "input_data": {},
+      "output_data": {
+        "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
+        "reasoning": "test"
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "93e99b71",
+      "kind": "tool_call",
+      "agent": "sandbox_verifier",
+      "action": "apply_migration",
+      "timestamp": 1788022956.717383,
+      "input_data": {},
+      "output_data": {
+        "success": true,
+        "error": null
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "85d92942",
+      "kind": "error",
+      "agent": "data_loss_guardian",
+      "action": "error",
+      "timestamp": 1788022956.7174551,
+      "input_data": {},
+      "output_data": {},
+      "error_type": "DataLossDetected",
+      "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
+    },
+    {
+      "step_id": "07caaef9",
+      "kind": "self_correction",
+      "agent": "orchestrator",
+      "action": "self_correction",
+      "timestamp": 1788022956.717462,
+      "input_data": {
+        "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']",
+        "strategy": "retry with data-loss report fed back to synthesizer"
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "e14d08e9",
+      "kind": "tool_call",
+      "agent": "migration_synthesizer",
+      "action": "synthesize",
+      "timestamp": 1788022956.71757,
+      "input_data": {
+        "attempt": 3,
+        "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "87600bed",
+      "kind": "environment_response",
+      "agent": "migration_synthesizer",
+      "action": "synthesize_result",
+      "timestamp": 1788022956.717598,
+      "input_data": {},
+      "output_data": {
+        "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
+        "reasoning": "test"
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "17f3a3a2",
+      "kind": "tool_call",
+      "agent": "sandbox_verifier",
+      "action": "apply_migration",
+      "timestamp": 1788022956.7186828,
+      "input_data": {},
+      "output_data": {
+        "success": true,
+        "error": null
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "7075b478",
+      "kind": "error",
+      "agent": "data_loss_guardian",
+      "action": "error",
+      "timestamp": 1788022956.7187572,
+      "input_data": {},
+      "output_data": {},
+      "error_type": "DataLossDetected",
+      "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
+    }
+  ]
+}
