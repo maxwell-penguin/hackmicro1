@@ -83,16 +83,94 @@ tracking, declared row-count decrease, declared column drop).
 
 ## Improvement Changelog
 
-_(filled in as the advanced solution is built — every entry here
-should tie a specific change to a specific benchmark result, not a
-general claim)_
+| Case | Baseline | Advanced | Improved? |
+|---|---|---|---|
+| 01_simple_add | ok | success |  |
+| 02_rename_column_with_data | ok | success |  |
+| 03_type_migration | ok | success |  |
+| 05_table_split | SQL error | success | ✓ |
+| 08_composite_unique_index | DATA LOSS | success | ✓ |
+| 10_safe_deprecation | DATA LOSS | success | ✓ |
+
+- **The extractor's table-level-diff fix is why 08_composite_unique_index gets
+  attempted at all.** Before the fix in `5487a1b`, drift detection only compared
+  column lists, so a UNIQUE constraint added to `tags` — same columns, different
+  table-level SQL — registered as "no drift" and the orchestrator's `has_drift`
+  gate never called the Synthesizer. Adding `table_definition_changed` (raw
+  `CREATE TABLE` text comparison, `src/agents/extractor.py`) is what turns this
+  case from silently skipped into an actual attempt, which is why it shows up as
+  a success at all in `advanced_results.json` rather than not appearing.
+- **The backfill-pattern system prompt rule is the direct cause of the two DATA
+  LOSS → success flips.** The baseline LLM resolves both 08 and 10 with the
+  classic `CREATE new_table -> INSERT ... GROUP BY / SELECT -> DROP old ->
+  RENAME` pattern, which silently drops rows the Guardian later catches
+  (`missing values: ['1', 'urgent']`, row count 2→1 on `tags`; `missing values:
+  ['xyz123']` on 10_safe_deprecation). The advanced Synthesizer's system prompt
+  (`src/agents/synthesizer.py`) states the ADD → backfill → DROP pattern as a
+  CRITICAL RULE up front and forces a `propose_migration` tool call with
+  `intentional_drops` / `allow_row_count_decrease` as required fields — the
+  model can't emit SQL without also declaring what it's discarding.
+- **05_table_split fails on the baseline for an ordering bug, not a data-loss
+  bug**, and the same manifest-driven Synthesizer fixes it too: baseline SQL
+  inserts into `addresses` before creating `users_new`/dropping the FK's target
+  in the wrong order, hitting `FOREIGN KEY constraint failed`
+  (`trajectories/baseline/05_table_split.json`). This is a different failure
+  mode than 08/10 but the same root cause — a single-shot model with no
+  SQLite-specific constraints in its prompt — and the advanced prompt's
+  explicit list of SQLite `ALTER TABLE` limitations resolves it too.
+- **The orchestrator's per-attempt sandbox re-provisioning fix
+  (`e90f86d`) prevents a compounding-failure bug that never triggered in this
+  run but was caught by `tests/test_orchestrator.py` before the live run
+  happened.** `SandboxVerifier.apply_migration` only rolls back on a SQL-level
+  error (`src/core/sandbox.py:144-155`, explicit `BEGIN`/`COMMIT`/`ROLLBACK`) —
+  a migration that executes cleanly but trips the Guardian's data-loss check
+  leaves its DDL committed to that sandbox. The orchestrator provisions a fresh
+  sandbox from the original `physical.db` on every retry attempt instead of
+  reusing one across attempts, so a corrected second attempt reasons about the
+  real starting schema instead of the wreckage of the first attempt's partial
+  changes.
+- All 6 advanced cases succeeded in a single Synthesizer call (`attempts: 1` in
+  `results/advanced_results.json` for every case) — the empirical gains above
+  came entirely from getting the first attempt right, not from the retry loop
+  correcting a bad one. See [Hot Take](#hot-take).
 
 ## Hot Take
 
-_(filled in after running both baseline and advanced against all 6
-cases — this should name one specific, real failure mode we observed
-and the concrete engineering lesson it taught us)_
+Every one of the 6 advanced cases in `results/advanced_results.json` has
+`"attempts": 1` and an empty `attempt_errors` list. The retry loop in
+`src/orchestrator.py` — re-provision a fresh sandbox, feed the Guardian's
+failure back to the Synthesizer, try again up to `MAX_ATTEMPTS = 3` — never
+fired against the live model. It's exercised directly in
+`tests/test_orchestrator.py` (`case_always_bad`, `case_rename_retry`) with a
+mocked Synthesizer that's scripted to fail then succeed, so the mechanics are
+proven correct. But "proven correct in a unit test with a scripted failure"
+and "battle-tested in production" are different claims, and I don't want the
+changelog above to blur them: on the one live run this project has, the retry
+path is unit-tested, not observed.
+
+What actually did the work was constraining the first attempt: the
+CRITICAL RULE against drop-and-recreate, the explicit SQLite `ALTER TABLE`
+limitations (no `ALTER COLUMN`, `CREATE UNIQUE INDEX` instead of `ADD
+CONSTRAINT`), and forcing a `propose_migration` tool call so
+`intentional_drops`/`allow_row_count_decrease` are structured fields instead
+of something the model could just forget to mention. Every one of the three
+flips in the comparison table (05, 08, 10) is explainable by one of those
+prompt constraints landing on the first try, not by an error message
+teaching the model something on a second try. If I deleted the entire retry
+loop and kept only the system prompt and the Guardian as a hard gate, this
+specific 6-case benchmark would score identically.
+
+The honest engineering conclusion isn't "retries don't matter" — a
+harder or more adversarial case set would probably need them, and the
+Guardian's whole design assumes some fraction of attempts will be wrong. It's
+that for a well-scoped, well-understood domain (SQLite DDL, a fixed small set
+of drift shapes), the marginal value of a first attempt built from specific,
+enumerated domain constraints was higher than the marginal value of retry
+sophistication — at least on this benchmark, at this size. If I had 3 more
+days I'd spend them adversarially expanding the benchmark until the retry
+loop actually fires for real, rather than adding more retry logic on top of
+a loop that's currently unproven outside its unit tests.
 
 ## Reproduction
 
-See `REPRODUCTION.md` (not yet written) for exact setup + CLI commands.
+See [REPRODUCTION.md](REPRODUCTION.md) for exact setup + CLI commands.
