@@ -1,17 +1,17 @@
 {
   "case_name": "case_always_bad",
-  "run_id": "6c458e2673d2",
-  "started_at": 1788022956.713921,
-  "ended_at": 1788022956.718872,
+  "run_id": "a050a3796d02",
+  "started_at": 1788026635.884259,
+  "ended_at": 1788026635.88915,
   "outcome": "failed_max_retries",
   "attempt_count": 2,
   "steps": [
     {
-      "step_id": "6b3ea9a3",
+      "step_id": "51cc4635",
       "kind": "reasoning",
       "agent": "state_extractor",
       "action": "extract_drift",
-      "timestamp": 1788022956.7148218,
+      "timestamp": 1788026635.8851788,
       "input_data": {},
       "output_data": {
         "has_drift": true,
@@ -21,11 +21,11 @@
       "error_message": null
     },
     {
-      "step_id": "9324f3a2",
+      "step_id": "75a3d910",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788022956.7148328,
+      "timestamp": 1788026635.885189,
       "input_data": {
         "attempt": 1,
         "prior_error": null
@@ -35,11 +35,11 @@
       "error_message": null
     },
     {
-      "step_id": "b8f8afe0",
+      "step_id": "820bb12f",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788022956.71487,
+      "timestamp": 1788026635.8852239,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
@@ -49,11 +49,11 @@
       "error_message": null
     },
     {
-      "step_id": "8267afc3",
+      "step_id": "a286ae62",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788022956.715987,
+      "timestamp": 1788026635.8863108,
       "input_data": {},
       "output_data": {
         "success": true,
@@ -63,22 +63,22 @@
       "error_message": null
     },
     {
-      "step_id": "eef76c56",
+      "step_id": "a1e5055b",
       "kind": "error",
       "agent": "data_loss_guardian",
       "action": "error",
-      "timestamp": 1788022956.716083,
+      "timestamp": 1788026635.886395,
       "input_data": {},
       "output_data": {},
       "error_type": "DataLossDetected",
       "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
     },
     {
-      "step_id": "6422240b",
+      "step_id": "3260292f",
       "kind": "self_correction",
       "agent": "orchestrator",
       "action": "self_correction",
-      "timestamp": 1788022956.7160919,
+      "timestamp": 1788026635.8864052,
       "input_data": {
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']",
         "strategy": "retry with data-loss report fed back to synthesizer"
@@ -88,11 +88,11 @@
       "error_message": null
     },
     {
-      "step_id": "b58309ee",
+      "step_id": "24f728b2",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788022956.716225,
+      "timestamp": 1788026635.8864992,
       "input_data": {
         "attempt": 2,
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
@@ -102,11 +102,11 @@
       "error_message": null
     },
     {
-      "step_id": "93c94d7a",
+      "step_id": "9dfe75a7",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788022956.716268,
+      "timestamp": 1788026635.886525,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
@@ -116,11 +116,11 @@
       "error_message": null
     },
     {
-      "step_id": "93e99b71",
+      "step_id": "b3f61e4c",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788022956.717383,
+      "timestamp": 1788026635.887556,
       "input_data": {},
       "output_data": {
         "success": true,
@@ -130,22 +130,22 @@
       "error_message": null
     },
     {
-      "step_id": "85d92942",
+      "step_id": "8a0d025c",
       "kind": "error",
       "agent": "data_loss_guardian",
       "action": "error",
-      "timestamp": 1788022956.7174551,
+      "timestamp": 1788026635.8876312,
       "input_data": {},
       "output_data": {},
       "error_type": "DataLossDetected",
       "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
     },
     {
-      "step_id": "07caaef9",
+      "step_id": "5dea124f",
       "kind": "self_correction",
       "agent": "orchestrator",
       "action": "self_correction",
-      "timestamp": 1788022956.717462,
+      "timestamp": 1788026635.887638,
       "input_data": {
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']",
         "strategy": "retry with data-loss report fed back to synthesizer"
@@ -155,11 +155,11 @@
       "error_message": null
     },
     {
-      "step_id": "e14d08e9",
+      "step_id": "fcc50458",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788022956.71757,
+      "timestamp": 1788026635.88776,
       "input_data": {
         "attempt": 3,
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice']"
@@ -169,11 +169,11 @@
       "error_message": null
     },
     {
-      "step_id": "87600bed",
+      "step_id": "c0cf051b",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788022956.717598,
+      "timestamp": 1788026635.887794,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
@@ -183,11 +183,11 @@
       "error_message": null
     },
     {
-      "step_id": "17f3a3a2",
+      "step_id": "15868bcb",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788022956.7186828,
+      "timestamp": 1788026635.888994,
       "input_data": {},
       "output_data": {
         "success": true,
@@ -197,11 +197,11 @@
       "error_message": null
     },
     {
-      "step_id": "7075b478",
+      "step_id": "1177eaf4",
       "kind": "error",
       "agent": "data_loss_guardian",
       "action": "error",
-      "timestamp": 1788022956.7187572,
+      "timestamp": 1788026635.889063,
       "input_data": {},
       "output_data": {},
       "error_type": "DataLossDetected",

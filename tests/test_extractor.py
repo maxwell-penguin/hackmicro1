@@ -88,13 +88,13 @@ def test_case_05_table_split_detects_added_table_and_removed_columns():
     assert "addresses" in addresses_diff.create_sql.lower()
 
 
-def test_case_08_composite_unique_index_detects_no_column_drift():
+def test_case_08_composite_unique_index_detects_table_level_drift():
     """Adding a UNIQUE constraint via a new index (rather than an
-    inline table constraint) shows up as an unchanged table in a pure
-    column-level diff -- the Synthesizer needs to know a uniqueness
-    requirement exists from the target schema text itself, not from
-    the column diff. Documenting that boundary here rather than
-    silently getting it wrong."""
+    inline column property) has an identical column list on both
+    sides -- a pure column-level diff would miss it entirely, which
+    was a real bug: the orchestrator's has_drift gate never attempted
+    a migration for this case because no column-level change was
+    detected. Comparing the raw CREATE TABLE text catches it."""
     conn = _physical_conn(
         "CREATE TABLE tags (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT);",
         "INSERT INTO tags (item_id, tag_name) VALUES (1, 'urgent'), (1, 'urgent');",
@@ -105,13 +105,19 @@ def test_case_08_composite_unique_index_detects_no_column_drift():
     )
 
     report = StateExtractor().extract_drift(conn, target)
+    assert report.has_drift
+
     tags_diff = next(t for t in report.tables if t.table_name == "tags")
-    # No column added/removed/type-changed -- the UNIQUE constraint is
-    # table-level metadata, not a column property, so it won't appear
-    # as a column diff. This is expected and handled by passing the
-    # full target_schema_sql text to the Synthesizer alongside the
-    # column-level diff.
-    assert tags_diff.status == "unchanged"
+    assert tags_diff.status == "modified"
+    assert tags_diff.table_definition_changed is True
+    # no column added/removed/type-changed -- the UNIQUE constraint is
+    # table-level metadata, not a column property
+    assert not tags_diff.columns_added
+    assert not tags_diff.columns_removed
+    assert not tags_diff.type_changes
+
+    text = report.to_prompt_text()
+    assert "table-level definition differs" in text
 
 
 def test_case_10_safe_deprecation_detects_column_removal():

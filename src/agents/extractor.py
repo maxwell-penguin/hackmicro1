@@ -61,6 +61,7 @@ class TableDiff:
     columns_removed: list = field(default_factory=list)    # list[ColumnInfo]
     type_changes: list = field(default_factory=list)       # list[TypeChange]
     nullability_changes: list = field(default_factory=list)  # list[NullabilityChange]
+    table_definition_changed: bool = False  # raw CREATE TABLE text differs (constraints, indexes, etc.)
     create_sql: Optional[str] = None  # populated for "added" tables
 
 
@@ -103,6 +104,14 @@ class DriftReport:
                         f"  ~ nullability changed: {nc.column} "
                         f"NOT NULL={nc.old_not_null} -> NOT NULL={nc.new_not_null}"
                     )
+                if t.table_definition_changed and not (
+                    t.columns_added or t.columns_removed or t.type_changes or t.nullability_changes
+                ):
+                    lines.append(
+                        "  ~ table-level definition differs from target (e.g. a UNIQUE "
+                        "constraint, CHECK constraint, or index) -- no column-level change, "
+                        "inspect the full target schema SQL below for the exact requirement"
+                    )
             lines.append("")
         if not any(t.status != "unchanged" for t in self.tables):
             lines.append("(no drift detected)")
@@ -115,6 +124,9 @@ class StateExtractor:
     def extract_drift(self, physical_conn: sqlite3.Connection, target_schema_sql: str) -> DriftReport:
         physical_tables = self._introspect(physical_conn)
         physical_create_sql = self._dump_create_statements(physical_conn)
+        physical_create_by_name = {
+            name: sql for name, sql in self._table_create_statements(physical_conn)
+        }
 
         target_conn = sqlite3.connect(":memory:")
         try:
@@ -147,7 +159,13 @@ class StateExtractor:
                 diffs.append(TableDiff(table_name=table_name, status="removed"))
                 continue
 
-            diff = self._diff_columns(table_name, phys_cols, targ_cols)
+            diff = self._diff_columns(
+                table_name,
+                phys_cols,
+                targ_cols,
+                phys_sql=physical_create_by_name.get(table_name),
+                targ_sql=target_create_by_name.get(table_name),
+            )
             diffs.append(diff)
 
         return DriftReport(
@@ -159,7 +177,13 @@ class StateExtractor:
     # -- diffing -------------------------------------------------------
 
     @staticmethod
-    def _diff_columns(table_name: str, phys_cols: dict, targ_cols: dict) -> TableDiff:
+    def _diff_columns(
+        table_name: str,
+        phys_cols: dict,
+        targ_cols: dict,
+        phys_sql: Optional[str] = None,
+        targ_sql: Optional[str] = None,
+    ) -> TableDiff:
         phys_names = set(phys_cols)
         targ_names = set(targ_cols)
 
@@ -177,7 +201,19 @@ class StateExtractor:
                     NullabilityChange(column=name, old_not_null=p.not_null, new_not_null=t.not_null)
                 )
 
-        has_changes = bool(columns_added or columns_removed or type_changes or nullability_changes)
+        # Column-level diffing alone misses constraint/index-only changes
+        # (a UNIQUE constraint added to an existing table has an identical
+        # column list on both sides). Comparing the raw CREATE TABLE text
+        # catches those -- this is what fixed the case-08 bug where the
+        # orchestrator's has_drift gate never even attempted a migration
+        # because no column-level change was detected.
+        table_definition_changed = StateExtractor._normalize_sql(phys_sql) != StateExtractor._normalize_sql(
+            targ_sql
+        )
+
+        has_changes = bool(
+            columns_added or columns_removed or type_changes or nullability_changes or table_definition_changed
+        )
         return TableDiff(
             table_name=table_name,
             status="modified" if has_changes else "unchanged",
@@ -185,6 +221,7 @@ class StateExtractor:
             columns_removed=columns_removed,
             type_changes=type_changes,
             nullability_changes=nullability_changes,
+            table_definition_changed=table_definition_changed,
         )
 
     # -- introspection -------------------------------------------------
@@ -224,3 +261,13 @@ class StateExtractor:
             "SELECT sql FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND sql IS NOT NULL;"
         ).fetchall()
         return "\n".join(r[0] + ";" for r in rows)
+
+    @staticmethod
+    def _normalize_sql(sql: Optional[str]) -> str:
+        """Collapse whitespace and drop a trailing semicolon so two
+        CREATE TABLE statements that are semantically identical but
+        formatted differently don't register as a false table-level
+        diff."""
+        if not sql:
+            return ""
+        return " ".join(sql.strip().rstrip(";").split()).lower()

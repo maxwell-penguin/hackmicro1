@@ -126,7 +126,18 @@ class MigrationSynthesizer:
     def __init__(self, client: Optional["anthropic.Anthropic"] = None, model: str = DEFAULT_MODEL):
         # Client is injectable so callers (and tests) can supply a mock
         # instead of hitting the network -- see tests/test_synthesizer.py.
-        self.client = client or anthropic.Anthropic()
+        #
+        # default_headers forces Accept-Encoding to skip Brotli. Some
+        # local environments have a brotli/brotlicffi package installed
+        # whose decompressor API doesn't match what the HTTP client
+        # expects (a `TypeError: process() takes no keyword arguments`
+        # crash on an otherwise-successful 200 response). Rather than
+        # depend on every machine (including a judge's) having a
+        # correctly matched Brotli install, just don't negotiate it --
+        # gzip is still requested and works everywhere.
+        self.client = client or anthropic.Anthropic(
+            default_headers={"accept-encoding": "gzip, deflate"}
+        )
         self.model = model
 
     def synthesize(

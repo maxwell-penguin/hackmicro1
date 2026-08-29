@@ -4,5 +4,4 @@ __pycache__/
 .env
 *.db
 .DS_Store
-trajectories/*.json
 .pytest_cache/

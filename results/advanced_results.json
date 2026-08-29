@@ -1,0 +1,44 @@
+[
+  {
+    "case_name": "01_simple_add",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/01_simple_add.json"
+  },
+  {
+    "case_name": "02_rename_column_with_data",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/02_rename_column_with_data.json"
+  },
+  {
+    "case_name": "03_type_migration",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/03_type_migration.json"
+  },
+  {
+    "case_name": "05_table_split",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/05_table_split.json"
+  },
+  {
+    "case_name": "08_composite_unique_index",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/08_composite_unique_index.json"
+  },
+  {
+    "case_name": "10_safe_deprecation",
+    "outcome": "success",
+    "attempts": 1,
+    "attempt_errors": [],
+    "trajectory_path": "trajectories/advanced/10_safe_deprecation.json"
+  }
+]

@@ -1,31 +1,31 @@
 {
-  "case_name": "case_rename",
-  "run_id": "a27e307c8ba6",
-  "started_at": 1788026635.871129,
-  "ended_at": 1788026635.8736372,
+  "case_name": "10_safe_deprecation",
+  "run_id": "a5d604cc1c47",
+  "started_at": 1788026653.94045,
+  "ended_at": 1788026657.234087,
   "outcome": "success",
   "attempt_count": 0,
   "steps": [
     {
-      "step_id": "b28e32ca",
+      "step_id": "139b4d51",
       "kind": "reasoning",
       "agent": "state_extractor",
       "action": "extract_drift",
-      "timestamp": 1788026635.872289,
+      "timestamp": 1788026653.9430962,
       "input_data": {},
       "output_data": {
         "has_drift": true,
-        "summary": "SCHEMA DRIFT REPORT\n====================\n\nTable: users [modified]\n  + column added: full_name TEXT\n  - column removed: user_name TEXT\n"
+        "summary": "SCHEMA DRIFT REPORT\n====================\n\nTable: users [modified]\n  - column removed: legacy_hash TEXT\n"
       },
       "error_type": null,
       "error_message": null
     },
     {
-      "step_id": "27dd34e9",
+      "step_id": "cebc9190",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788026635.872301,
+      "timestamp": 1788026653.943118,
       "input_data": {
         "attempt": 1,
         "prior_error": null
@@ -35,25 +35,25 @@
       "error_message": null
     },
     {
-      "step_id": "f040b2cd",
+      "step_id": "4554c15a",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788026635.872341,
+      "timestamp": 1788026657.230365,
       "input_data": {},
       "output_data": {
-        "migration_sql": "ALTER TABLE users RENAME COLUMN user_name TO full_name;",
-        "reasoning": "test"
+        "migration_sql": "ALTER TABLE users DROP COLUMN legacy_hash;",
+        "reasoning": "The target schema no longer includes legacy_hash, indicating it is intentionally deprecated. Since SQLite doesn't support dropping columns in old versions but modern SQLite (3.35+) supports DROP COLUMN directly, we can safely drop it. This is a deliberate removal of a deprecated column, not a rename or restructuring, so no backfill is needed."
       },
       "error_type": null,
       "error_message": null
     },
     {
-      "step_id": "9e7a9738",
+      "step_id": "2bc0d96f",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788026635.8735192,
+      "timestamp": 1788026657.23383,
       "input_data": {},
       "output_data": {
         "success": true,

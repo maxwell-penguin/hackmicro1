@@ -1,0 +1,50 @@
+[
+  {
+    "case_name": "01_simple_add",
+    "sql_succeeded": true,
+    "sql_error": null,
+    "data_loss_detected": false,
+    "data_loss_details": "",
+    "trajectory_path": "trajectories/baseline/01_simple_add.json"
+  },
+  {
+    "case_name": "02_rename_column_with_data",
+    "sql_succeeded": true,
+    "sql_error": null,
+    "data_loss_detected": false,
+    "data_loss_details": "",
+    "trajectory_path": "trajectories/baseline/02_rename_column_with_data.json"
+  },
+  {
+    "case_name": "03_type_migration",
+    "sql_succeeded": true,
+    "sql_error": null,
+    "data_loss_detected": false,
+    "data_loss_details": "",
+    "trajectory_path": "trajectories/baseline/03_type_migration.json"
+  },
+  {
+    "case_name": "05_table_split",
+    "sql_succeeded": false,
+    "sql_error": "FOREIGN KEY constraint failed",
+    "data_loss_detected": false,
+    "data_loss_details": "",
+    "trajectory_path": "trajectories/baseline/05_table_split.json"
+  },
+  {
+    "case_name": "08_composite_unique_index",
+    "sql_succeeded": true,
+    "sql_error": null,
+    "data_loss_detected": true,
+    "data_loss_details": "DATA_LOSS_DETECTED \u2014 missing values: ['1', 'urgent']; unexplained row-count drops: {'tags': (2, 1)}",
+    "trajectory_path": "trajectories/baseline/08_composite_unique_index.json"
+  },
+  {
+    "case_name": "10_safe_deprecation",
+    "sql_succeeded": true,
+    "sql_error": null,
+    "data_loss_detected": true,
+    "data_loss_details": "DATA_LOSS_DETECTED \u2014 missing values: ['xyz123']",
+    "trajectory_path": "trajectories/baseline/10_safe_deprecation.json"
+  }
+]

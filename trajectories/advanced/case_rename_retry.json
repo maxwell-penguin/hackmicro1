@@ -1,17 +1,17 @@
 {
   "case_name": "case_rename_retry",
-  "run_id": "21352a1f8960",
-  "started_at": 1788022956.707084,
-  "ended_at": 1788022956.7104142,
+  "run_id": "15d78f25542f",
+  "started_at": 1788026635.876854,
+  "ended_at": 1788026635.880629,
   "outcome": "success",
   "attempt_count": 1,
   "steps": [
     {
-      "step_id": "ff6b010e",
+      "step_id": "b57d5f00",
       "kind": "reasoning",
       "agent": "state_extractor",
       "action": "extract_drift",
-      "timestamp": 1788022956.7079492,
+      "timestamp": 1788026635.877732,
       "input_data": {},
       "output_data": {
         "has_drift": true,
@@ -21,11 +21,11 @@
       "error_message": null
     },
     {
-      "step_id": "89a561b8",
+      "step_id": "7f68ce92",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788022956.7079601,
+      "timestamp": 1788026635.877742,
       "input_data": {
         "attempt": 1,
         "prior_error": null
@@ -35,11 +35,11 @@
       "error_message": null
     },
     {
-      "step_id": "d9c7fe98",
+      "step_id": "5bc86019",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788022956.707998,
+      "timestamp": 1788026635.877776,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users DROP COLUMN user_name; ALTER TABLE users ADD COLUMN full_name TEXT;",
@@ -49,11 +49,11 @@
       "error_message": null
     },
     {
-      "step_id": "92579a0c",
+      "step_id": "23e367a0",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788022956.709058,
+      "timestamp": 1788026635.8788679,
       "input_data": {},
       "output_data": {
         "success": true,
@@ -63,22 +63,22 @@
       "error_message": null
     },
     {
-      "step_id": "18838f28",
+      "step_id": "e3271e99",
       "kind": "error",
       "agent": "data_loss_guardian",
       "action": "error",
-      "timestamp": 1788022956.709141,
+      "timestamp": 1788026635.878987,
       "input_data": {},
       "output_data": {},
       "error_type": "DataLossDetected",
       "error_message": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice', 'Bob']"
     },
     {
-      "step_id": "d10faaf1",
+      "step_id": "17369746",
       "kind": "self_correction",
       "agent": "orchestrator",
       "action": "self_correction",
-      "timestamp": 1788022956.7091498,
+      "timestamp": 1788026635.878997,
       "input_data": {
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice', 'Bob']",
         "strategy": "retry with data-loss report fed back to synthesizer"
@@ -88,11 +88,11 @@
       "error_message": null
     },
     {
-      "step_id": "2da8e8a9",
+      "step_id": "f9f7633e",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788022956.709236,
+      "timestamp": 1788026635.879115,
       "input_data": {
         "attempt": 2,
         "prior_error": "DATA_LOSS_DETECTED \u2014 missing values: ['Alice', 'Bob']"
@@ -102,11 +102,11 @@
       "error_message": null
     },
     {
-      "step_id": "b0e6eda7",
+      "step_id": "d5f61f67",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788022956.709263,
+      "timestamp": 1788026635.879144,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users RENAME COLUMN user_name TO full_name;",
@@ -116,11 +116,11 @@
       "error_message": null
     },
     {
-      "step_id": "6752c0f4",
+      "step_id": "c735370a",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788022956.7102458,
+      "timestamp": 1788026635.880502,
       "input_data": {},
       "output_data": {
         "success": true,

@@ -1,0 +1,66 @@
+{
+  "case_name": "05_table_split",
+  "run_id": "b09d7d395a97",
+  "started_at": 1788026646.622614,
+  "ended_at": 1788026650.4448059,
+  "outcome": "success",
+  "attempt_count": 0,
+  "steps": [
+    {
+      "step_id": "0908685c",
+      "kind": "reasoning",
+      "agent": "state_extractor",
+      "action": "extract_drift",
+      "timestamp": 1788026646.625372,
+      "input_data": {},
+      "output_data": {
+        "has_drift": true,
+        "summary": "SCHEMA DRIFT REPORT\n====================\n\nTable: addresses [added]\n  New table. Target definition:\n    CREATE TABLE addresses (id INTEGER PRIMARY KEY, user_id INTEGER, street TEXT, city TEXT, FOREIGN KEY(user_id) REFERENCES users(id))\n\nTable: users [modified]\n  - column removed: city TEXT\n  - column removed: street TEXT\n"
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "a031c31e",
+      "kind": "tool_call",
+      "agent": "migration_synthesizer",
+      "action": "synthesize",
+      "timestamp": 1788026646.625393,
+      "input_data": {
+        "attempt": 1,
+        "prior_error": null
+      },
+      "output_data": {},
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "85b965bc",
+      "kind": "environment_response",
+      "agent": "migration_synthesizer",
+      "action": "synthesize_result",
+      "timestamp": 1788026650.4397051,
+      "input_data": {},
+      "output_data": {
+        "migration_sql": "CREATE TABLE addresses (id INTEGER PRIMARY KEY, user_id INTEGER, street TEXT, city TEXT, FOREIGN KEY(user_id) REFERENCES users(id));\nINSERT INTO addresses (user_id, street, city) SELECT id, street, city FROM users WHERE street IS NOT NULL OR city IS NOT NULL;\nALTER TABLE users DROP COLUMN street;\nALTER TABLE users DROP COLUMN city;",
+        "reasoning": "The target schema normalizes address data out of users into a new addresses table. We create the addresses table, backfill it with one row per existing user that has street/city data, then drop the now-deprecated street and city columns from users."
+      },
+      "error_type": null,
+      "error_message": null
+    },
+    {
+      "step_id": "2675bb2b",
+      "kind": "tool_call",
+      "agent": "sandbox_verifier",
+      "action": "apply_migration",
+      "timestamp": 1788026650.444339,
+      "input_data": {},
+      "output_data": {
+        "success": true,
+        "error": null
+      },
+      "error_type": null,
+      "error_message": null
+    }
+  ]
+}
