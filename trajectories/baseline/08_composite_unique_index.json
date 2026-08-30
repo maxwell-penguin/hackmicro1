@@ -1,17 +1,17 @@
 {
   "case_name": "08_composite_unique_index",
-  "run_id": "e123210fc7ff",
-  "started_at": 1788025893.88094,
-  "ended_at": 1788025895.893385,
+  "run_id": "8527079b65b8",
+  "started_at": 1788113330.857524,
+  "ended_at": 1788113333.0059211,
   "outcome": "data_loss_detected",
   "attempt_count": 0,
   "steps": [
     {
-      "step_id": "dc325983",
+      "step_id": "8887ab8a",
       "kind": "tool_call",
       "agent": "baseline_llm",
       "action": "write_migration",
-      "timestamp": 1788025893.8828108,
+      "timestamp": 1788113330.8593621,
       "input_data": {
         "prompt": "Current schema:\nCREATE TABLE tags (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT)\n\nTarget schema:\nCREATE TABLE tags (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT, UNIQUE(item_id, tag_name));\n\nWrite the migration."
       },
@@ -20,24 +20,24 @@
       "error_message": null
     },
     {
-      "step_id": "24bcbb77",
+      "step_id": "4158224e",
       "kind": "environment_response",
       "agent": "baseline_llm",
       "action": "write_migration_result",
-      "timestamp": 1788025895.887972,
+      "timestamp": 1788113333.002298,
       "input_data": {},
       "output_data": {
-        "migration_sql": "CREATE TABLE tags_new (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT, UNIQUE(item_id, tag_name));\nINSERT INTO tags_new (id, item_id, tag_name) SELECT id, item_id, tag_name FROM tags GROUP BY item_id, tag_name;\nDROP TABLE tags;\nALTER TABLE tags_new RENAME TO tags;"
+        "migration_sql": "CREATE TABLE tags_new (id INTEGER PRIMARY KEY, item_id INTEGER, tag_name TEXT, UNIQUE(item_id, tag_name));\nINSERT OR IGNORE INTO tags_new (id, item_id, tag_name) SELECT id, item_id, tag_name FROM tags;\nDROP TABLE tags;\nALTER TABLE tags_new RENAME TO tags;\n"
       },
       "error_type": null,
       "error_message": null
     },
     {
-      "step_id": "6a3bcc3c",
+      "step_id": "2751990f",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788025895.8930209,
+      "timestamp": 1788113333.0056589,
       "input_data": {},
       "output_data": {
         "success": true,
@@ -47,11 +47,11 @@
       "error_message": null
     },
     {
-      "step_id": "0475f18e",
+      "step_id": "3cea0fe8",
       "kind": "error",
       "agent": "data_loss_guardian",
       "action": "error",
-      "timestamp": 1788025895.893376,
+      "timestamp": 1788113333.005915,
       "input_data": {},
       "output_data": {},
       "error_type": "DataLossDetected",

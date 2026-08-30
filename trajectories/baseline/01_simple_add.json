@@ -1,17 +1,17 @@
 {
   "case_name": "01_simple_add",
-  "run_id": "b2929ac1dceb",
-  "started_at": 1788025886.207238,
-  "ended_at": 1788025887.683276,
+  "run_id": "bf3bf0e9eb06",
+  "started_at": 1788113322.921929,
+  "ended_at": 1788113324.6650848,
   "outcome": "success",
   "attempt_count": 0,
   "steps": [
     {
-      "step_id": "904fa58c",
+      "step_id": "32b5ef93",
       "kind": "tool_call",
       "agent": "baseline_llm",
       "action": "write_migration",
-      "timestamp": 1788025886.2111318,
+      "timestamp": 1788113322.9275498,
       "input_data": {
         "prompt": "Current schema:\nCREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)\n\nTarget schema:\nCREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT, email TEXT);\n\nWrite the migration."
       },
@@ -20,11 +20,11 @@
       "error_message": null
     },
     {
-      "step_id": "9fd79fe1",
+      "step_id": "91c5b70b",
       "kind": "environment_response",
       "agent": "baseline_llm",
       "action": "write_migration_result",
-      "timestamp": 1788025887.681597,
+      "timestamp": 1788113324.662669,
       "input_data": {},
       "output_data": {
         "migration_sql": "ALTER TABLE users ADD COLUMN email TEXT;"
@@ -33,11 +33,11 @@
       "error_message": null
     },
     {
-      "step_id": "e6253f5c",
+      "step_id": "d3de289f",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788025887.683119,
+      "timestamp": 1788113324.664913,
       "input_data": {},
       "output_data": {
         "success": true,

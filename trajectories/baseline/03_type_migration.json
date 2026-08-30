@@ -1,17 +1,17 @@
 {
   "case_name": "03_type_migration",
-  "run_id": "8dd4dac282ca",
-  "started_at": 1788025889.1823192,
-  "ended_at": 1788025891.120851,
+  "run_id": "15398f4a1c51",
+  "started_at": 1788113326.185536,
+  "ended_at": 1788113327.984586,
   "outcome": "success",
   "attempt_count": 0,
   "steps": [
     {
-      "step_id": "ee1aea84",
+      "step_id": "805976a3",
       "kind": "tool_call",
       "agent": "baseline_llm",
       "action": "write_migration",
-      "timestamp": 1788025889.184534,
+      "timestamp": 1788113326.187123,
       "input_data": {
         "prompt": "Current schema:\nCREATE TABLE orders (id INTEGER PRIMARY KEY, amount VARCHAR(255))\n\nTarget schema:\nCREATE TABLE orders (id INTEGER PRIMARY KEY, amount INTEGER);\n\nWrite the migration."
       },
@@ -20,11 +20,11 @@
       "error_message": null
     },
     {
-      "step_id": "2067d4b9",
+      "step_id": "55b6675f",
       "kind": "environment_response",
       "agent": "baseline_llm",
       "action": "write_migration_result",
-      "timestamp": 1788025891.1180959,
+      "timestamp": 1788113327.981026,
       "input_data": {},
       "output_data": {
         "migration_sql": "CREATE TABLE orders_new (id INTEGER PRIMARY KEY, amount INTEGER);\nINSERT INTO orders_new (id, amount) SELECT id, CAST(amount AS INTEGER) FROM orders;\nDROP TABLE orders;\nALTER TABLE orders_new RENAME TO orders;"
@@ -33,11 +33,11 @@
       "error_message": null
     },
     {
-      "step_id": "e879a9e3",
+      "step_id": "e6a657f0",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788025891.120617,
+      "timestamp": 1788113327.984322,
       "input_data": {},
       "output_data": {
         "success": true,

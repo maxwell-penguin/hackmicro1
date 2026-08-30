@@ -1,17 +1,17 @@
 {
   "case_name": "08_composite_unique_index",
-  "run_id": "1c50dfb85694",
-  "started_at": 1788026650.448699,
-  "ended_at": 1788026653.9361641,
+  "run_id": "1c63c4e0da8c",
+  "started_at": 1788113352.8736792,
+  "ended_at": 1788113356.786491,
   "outcome": "success",
   "attempt_count": 0,
   "steps": [
     {
-      "step_id": "57fdf439",
+      "step_id": "d06dff67",
       "kind": "reasoning",
       "agent": "state_extractor",
       "action": "extract_drift",
-      "timestamp": 1788026650.451277,
+      "timestamp": 1788113352.877235,
       "input_data": {},
       "output_data": {
         "has_drift": true,
@@ -21,11 +21,11 @@
       "error_message": null
     },
     {
-      "step_id": "a289c346",
+      "step_id": "7a68f57a",
       "kind": "tool_call",
       "agent": "migration_synthesizer",
       "action": "synthesize",
-      "timestamp": 1788026650.451296,
+      "timestamp": 1788113352.8772569,
       "input_data": {
         "attempt": 1,
         "prior_error": null
@@ -35,25 +35,25 @@
       "error_message": null
     },
     {
-      "step_id": "73034f63",
+      "step_id": "adf8e7ff",
       "kind": "environment_response",
       "agent": "migration_synthesizer",
       "action": "synthesize_result",
-      "timestamp": 1788026653.931573,
+      "timestamp": 1788113356.783348,
       "input_data": {},
       "output_data": {
-        "migration_sql": "DELETE FROM tags WHERE id NOT IN (SELECT MIN(id) FROM tags GROUP BY item_id, tag_name); CREATE UNIQUE INDEX idx_tags_item_tag ON tags(item_id, tag_name);",
-        "reasoning": "The target schema requires a UNIQUE constraint on (item_id, tag_name) in the tags table. SQLite cannot add constraints via ALTER TABLE, so we must deduplicate existing rows that violate the future uniqueness (keeping the lowest id per duplicate group) and then create a unique index to enforce it going forward."
+        "migration_sql": "DELETE FROM tags WHERE id NOT IN (SELECT MIN(id) FROM tags GROUP BY item_id, tag_name); CREATE UNIQUE INDEX idx_tags_item_id_tag_name ON tags(item_id, tag_name);",
+        "reasoning": "The target schema requires a UNIQUE constraint on (item_id, tag_name) for the tags table. SQLite doesn't support adding constraints via ALTER TABLE, so we must deduplicate existing rows first (keeping the lowest id per duplicate group), then create a UNIQUE index to enforce the constraint going forward."
       },
       "error_type": null,
       "error_message": null
     },
     {
-      "step_id": "5b7b2534",
+      "step_id": "0022fb7c",
       "kind": "tool_call",
       "agent": "sandbox_verifier",
       "action": "apply_migration",
-      "timestamp": 1788026653.935791,
+      "timestamp": 1788113356.786274,
       "input_data": {},
       "output_data": {
         "success": true,
