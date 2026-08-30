@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MigraLoop — Agentic Schema-Drift Reconciler</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-raised: #151b23;
+    --bg-card: #1a212b;
+    --border: #2a3341;
+    --text: #e6edf3;
+    --text-dim: #8b98a8;
+    --text-faint: #5b6674;
+    --accent: #5eead4;
+    --accent-dim: #2dd4bf;
+    --danger: #f87171;
+    --danger-bg: #2a1516;
+    --safe: #4ade80;
+    --safe-bg: #12241a;
+    --mono: "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.5;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 32px; }
+
+  /* ---- Hero ---- */
+  header.hero {
+    padding: 96px 0 64px;
+    border-bottom: 1px solid var(--border);
+  }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+  h1 {
+    font-size: 56px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 20px;
+    font-weight: 650;
+  }
+  .lede {
+    font-size: 19px;
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 0 28px;
+  }
+  .lede strong { color: var(--text); font-weight: 600; }
+  .scope-note {
+    font-size: 13px;
+    color: var(--text-faint);
+    max-width: 640px;
+    border-left: 2px solid var(--border);
+    padding-left: 14px;
+  }
+
+  section { padding: 72px 0; border-bottom: 1px solid var(--border); }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    font-weight: 600;
+    margin: 0 0 8px;
+  }
+  h3 {
+    font-size: 30px;
+    letter-spacing: -0.01em;
+    margin: 0 0 32px;
+    font-weight: 600;
+    max-width: 640px;
+  }
+
+  /* ---- Architecture pipeline ---- */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .stage {
+    flex: 1 0 160px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 16px;
+    position: relative;
+  }
+  .stage + .stage { margin-left: 28px; }
+  .stage::before {
+    content: "→";
+    position: absolute;
+    left: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-faint);
+    font-size: 18px;
+  }
+  .stage-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .stage-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .stage-desc { font-size: 13px; color: var(--text-dim); }
+  .stage.guardian { border-color: var(--accent-dim); }
+  .retry-note {
+    margin-top: 20px;
+    font-size: 13px;
+    color: var(--text-faint);
+    font-family: var(--mono);
+  }
+
+  /* ---- Replay section ---- */
+  .replay-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+  .replay-controls { display: flex; gap: 10px; }
+  button.ctrl {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--bg-card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  button.ctrl:hover { border-color: var(--accent-dim); color: var(--accent); }
+  .tracks { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  @media (max-width: 720px) { .tracks { grid-template-columns: 1fr; } }
+  .track { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .track-label {
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    border-bottom: 1px solid var(--border);
+  }
+  .track.baseline .track-label { color: var(--danger); background: var(--danger-bg); }
+  .track.advanced .track-label { color: var(--safe); background: var(--safe-bg); }
+  .steps { padding: 8px; min-height: 360px; }
+  .step {
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    padding: 12px 14px;
+    margin: 6px 0;
+    border-radius: 8px;
+    background: var(--bg-raised);
+    border: 1px solid transparent;
+  }
+  .step.visible { opacity: 1; transform: translateY(0); }
+  .step.kind-error { border-color: var(--danger); background: var(--danger-bg); }
+  .step.kind-error .step-agent { color: var(--danger); }
+  .step-agent {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .step-body { font-size: 13px; color: var(--text-dim); white-space: pre-wrap; word-break: break-word; }
+  .step-body code { font-family: var(--mono); color: var(--text); }
+
+  .provenance {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+  .provenance::before { content: "◐ "; color: var(--accent-dim); }
+
+  /* ---- Comparison table ---- */
+  table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.cmp th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  table.cmp td { padding: 14px; border-bottom: 1px solid var(--border); }
+  table.cmp tr:last-child td { border-bottom: none; }
+  .case-name { font-family: var(--mono); font-size: 13px; }
+  .verdict { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-family: var(--mono); }
+  .verdict.bad { color: var(--danger); background: var(--danger-bg); }
+  .verdict.good { color: var(--safe); background: var(--safe-bg); }
+  .improved-mark { color: var(--accent); font-weight: 700; }
+
+  /* ---- Hot take ---- */
+  blockquote.pullquote {
+    margin: 0 0 12px;
+    padding: 0 0 0 24px;
+    border-left: 3px solid var(--accent);
+    font-size: 25px;
+    line-height: 1.45;
+    font-weight: 500;
+    letter-spacing: -0.005em;
+    color: var(--text);
+    max-width: 720px;
+    white-space: normal;
+  }
+  .hottake-note {
+    margin: 0 0 26px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+  details.hottake-full summary {
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    padding: 6px 0;
+  }
+  details.hottake-full summary:hover { color: var(--accent); }
+  details.hottake-full[open] summary { margin-bottom: 16px; }
+  blockquote.hottake {
+    margin: 0;
+    padding: 28px 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 4px 10px 10px 4px;
+    font-size: 14px;
+    color: var(--text-dim);
+    white-space: pre-wrap;
+  }
+  .hottake-source {
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+  }
+
+  footer { padding: 40px 0 80px; }
+  footer p { font-size: 13px; color: var(--text-faint); font-family: var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">MigraLoop</div>
+    <h1>Schema drift is inevitable.<br>Silent data loss shouldn't be.</h1>
+    <p class="lede">
+      Production database schemas drift from ORM models over time. Asking an LLM to
+      "just generate a fix" often makes it worse: a single-shot model frequently
+      resolves a rename or type change by dropping the column and recreating it —
+      syntactically fine, <strong>semantically catastrophic</strong>. MigraLoop puts a
+      deterministic, non-AI Data Loss Guardian between "the agent wrote a migration"
+      and "the migration is accepted."
+    </p>
+    <p class="scope-note">
+      Built on SQLite (not Postgres) for a disposable, Docker-free sandbox and
+      reproducibility on a judge's machine — see README.md's Scoping Notes for why.
+    </p>
+  </header>
+
+  <section id="architecture">
+    <h2>Architecture</h2>
+    <h3>Five stages, one non-negotiable gate</h3>
+    <div class="pipeline">
+      <div class="stage">
+        <div class="stage-num">01</div>
+        <div class="stage-title">State Extractor</div>
+        <div class="stage-desc">Deterministic schema diff. No LLM.</div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">02</div>
+        <div class="stage-title">Migration Synthesizer</div>
+        <div class="stage-desc">LLM call. Forces a declared drop manifest.</div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">03</div>
+        <div class="stage-title">Sandbox Verifier</div>
+        <div class="stage-desc">Applies the migration to an isolated SQLite copy.</div>
+      </div>
+      <div class="stage guardian">
+        <div class="stage-num">04</div>
+        <div class="stage-title">Data Loss Guardian</div>
+        <div class="stage-desc">Deterministic. Rejects undeclared data loss.</div>
+      </div>
+      <div class="stage">
+        <div class="stage-num">05</div>
+        <div class="stage-title">Retry loop</div>
+        <div class="stage-desc">Retries with a fresh sandbox, up to 3x.</div>
+      </div>
+    </div>
+    <div class="retry-note">// see the Hot Take below — on this benchmark, the retry loop never actually fired</div>
+  </section>
+
+  <section id="replay">
+    <div class="replay-header">
+      <div>
+        <h2>Same drift, two agents</h2>
+        <h3 style="margin-bottom:6px;">Case <span id="replay-case-name" class="case-name"></span></h3>
+      </div>
+      <div class="replay-controls">
+        <button class="ctrl" id="btn-replay">↺ replay</button>
+      </div>
+    </div>
+    <div class="tracks">
+      <div class="track baseline">
+        <div class="track-label">Baseline — single-shot LLM</div>
+        <div class="steps" id="steps-baseline"></div>
+      </div>
+      <div class="track advanced">
+        <div class="track-label">Advanced — MigraLoop</div>
+        <div class="steps" id="steps-advanced"></div>
+      </div>
+    </div>
+    <p class="provenance" id="provenance-note"></p>
+  </section>
+
+  <section id="comparison">
+    <h2>Measured improvement</h2>
+    <h3>Baseline vs. advanced, all six cases</h3>
+    <table class="cmp">
+      <thead>
+        <tr><th>Case</th><th>Baseline</th><th>Advanced</th><th>Improved</th></tr>
+      </thead>
+      <tbody id="cmp-body"></tbody>
+    </table>
+  </section>
+
+  <section id="hottake">
+    <h2>Hot take</h2>
+    <h3>The honest engineering conclusion</h3>
+    <blockquote class="pullquote" id="pullquote-text"></blockquote>
+    <p class="hottake-note">Full analysis in README.md</p>
+    <details class="hottake-full">
+      <summary>Read the full Hot Take</summary>
+      <blockquote class="hottake" id="hottake-text"></blockquote>
+      <p class="hottake-source">— README.md, verbatim, regenerated by demo/generate_demo_data.py</p>
+    </details>
+  </section>
+
+  <footer>
+    <p>MigraLoop · this page replays committed evaluation data from results/ and trajectories/. No live API calls.</p>
+  </footer>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function () {
+  const data = DEMO_DATA;
+
+  // ---- comparison table ----
+  const tbody = document.getElementById("cmp-body");
+  for (const row of data.comparison) {
+    const tr = document.createElement("tr");
+    const bClass = row.baseline === "ok" ? "good" : (row.baseline === "not run" ? "" : "bad");
+    const aClass = row.advanced === "success" ? "good" : "bad";
+    tr.innerHTML = `
+      <td class="case-name">${row.case}</td>
+      <td><span class="verdict ${bClass}">${row.baseline}</span></td>
+      <td><span class="verdict ${aClass}">${row.advanced}</span></td>
+      <td>${row.improved ? '<span class="improved-mark">✓ fixed</span>' : ''}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  // ---- hot take ----
+  // Pulls a fixed excerpt out of the real hot_take text (never a hardcoded
+  // copy) so the quote can't silently drift from README.md's actual wording.
+  // Falls back to the opening sentence if that excerpt's wording ever changes.
+  function extractPullQuote(text) {
+    // README hard-wraps its prose, so the excerpt can straddle a mid-sentence
+    // newline -- search a flattened copy (1-char '\n'->' ' swap keeps offsets
+    // aligned) but slice the original so CSS whitespace collapsing renders it
+    // as one clean paragraph.
+    const flat = text.replace(/\n/g, " ");
+    const start = "Every one of the three flips";
+    const end = "would score identically.";
+    const s = flat.indexOf(start);
+    const e = flat.indexOf(end);
+    if (s !== -1 && e !== -1) return text.slice(s, e + end.length);
+    return text.split(/\n\n/)[0];
+  }
+  document.getElementById("pullquote-text").textContent = extractPullQuote(data.hot_take);
+  document.getElementById("hottake-text").textContent = data.hot_take;
+
+  // ---- replay ----
+  document.getElementById("replay-case-name").textContent = data.replay_case;
+  document.getElementById("provenance-note").textContent =
+    `Replaying captured trajectories from trajectories/baseline/${data.replay_case}.json ` +
+    `and trajectories/advanced/${data.replay_case}.json — not a live API call.`;
+
+  function describeStep(step) {
+    const agent = step.agent.replace(/_/g, " ");
+    let body = "";
+    if (step.kind === "error") {
+      body = step.error_message || "";
+    } else if (step.output_data && step.output_data.migration_sql) {
+      body = "<code>" + step.output_data.migration_sql.trim() + "</code>";
+      if (step.output_data.reasoning) body += "\n\n" + step.output_data.reasoning;
+    } else if (step.output_data && step.output_data.summary) {
+      body = step.output_data.summary;
+    } else if (step.output_data && "success" in step.output_data) {
+      body = step.output_data.success
+        ? "applied cleanly"
+        : `failed: ${step.output_data.error || "unknown error"}`;
+    } else if (step.input_data && step.input_data.prompt) {
+      body = step.input_data.prompt;
+    } else if (step.input_data && "attempt" in step.input_data) {
+      body = step.input_data.prior_error
+        ? `attempt ${step.input_data.attempt}, retrying after: ${step.input_data.prior_error}`
+        : `attempt ${step.input_data.attempt} — requesting a migration proposal…`;
+    } else {
+      const fallback = (step.output_data && Object.keys(step.output_data).length) ? step.output_data
+        : (step.input_data && Object.keys(step.input_data).length) ? step.input_data
+        : null;
+      body = fallback ? JSON.stringify(fallback) : "";
+    }
+    return { agent, body };
+  }
+
+  function renderTrack(containerId, trajectory) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = "";
+    return trajectory.steps.map((step) => {
+      const { agent, body } = describeStep(step);
+      const el = document.createElement("div");
+      el.className = "step" + (step.kind === "error" ? " kind-error" : "");
+      el.innerHTML = `<div class="step-agent">${agent} · ${step.action}</div><div class="step-body">${body}</div>`;
+      container.appendChild(el);
+      return el;
+    });
+  }
+
+  let timers = [];
+  function playReplay() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    const baselineEls = renderTrack("steps-baseline", data.replay_baseline_trajectory);
+    const advancedEls = renderTrack("steps-advanced", data.replay_advanced_trajectory);
+    const maxLen = Math.max(baselineEls.length, advancedEls.length);
+    const stepDelayMs = 900;
+    for (let i = 0; i < maxLen; i++) {
+      timers.push(setTimeout(() => {
+        if (baselineEls[i]) baselineEls[i].classList.add("visible");
+        if (advancedEls[i]) advancedEls[i].classList.add("visible");
+      }, i * stepDelayMs));
+    }
+  }
+
+  document.getElementById("btn-replay").addEventListener("click", playReplay);
+  playReplay();
+})();
+</script>
+</body>
+</html>

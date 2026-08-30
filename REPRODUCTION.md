@@ -54,7 +54,20 @@ benchmark case and will make real, billed API calls — they require a live
 `ANTHROPIC_API_KEY` in `.env`. `make test` and `make evaluate` do not call
 the API.
 
-## 6. Where to find the output
+## 6. Generate the demo page
+
+```bash
+make demo
+```
+
+Reads the committed `results/` and `trajectories/` output plus README.md's
+Hot Take section and writes `demo/data.js`. Then open `demo/index.html`
+directly in a browser — it's a static page with no server and no API calls;
+it only replays the captured evaluation run. Re-run `make demo` any time
+`results/`, `trajectories/`, or README.md's Hot Take section changes, so the
+page can't drift out of sync with the real evidence.
+
+## 7. Where to find the output
 
 - `results/baseline_results.json`, `results/advanced_results.json` — per-case
   structured outcomes (success/error, data-loss detection, attempt counts).

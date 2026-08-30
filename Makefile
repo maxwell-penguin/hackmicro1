@@ -1,4 +1,4 @@
-.PHONY: install baseline advanced evaluate test clean
+.PHONY: install baseline advanced evaluate test demo clean
 
 install:
 	python -m pip install -r requirements.txt
@@ -16,5 +16,9 @@ evaluate:
 test:
 	pytest -q
 
+demo:
+	python -m demo.generate_demo_data
+	@echo "open demo/index.html in a browser -- no server needed"
+
 clean:
-	rm -rf trajectories/baseline/*.json trajectories/advanced/*.json benchmarks/*/physical.db results/*.json results/comparison.md
+	rm -rf trajectories/baseline/*.json trajectories/advanced/*.json benchmarks/*/physical.db results/*.json results/comparison.md demo/data.js
