@@ -135,15 +135,42 @@
     align-items: stretch;
     gap: 0;
     overflow-x: auto;
-    padding-bottom: 8px;
+    /* CSS quirk: once overflow-x is anything but visible, the UA forces
+       the computed value of overflow-y to auto too, even if you write
+       "visible" here explicitly -- so overflow-y:visible alone does NOT
+       stop vertical clipping (verified: it still clips). The Guardian
+       card is visually raised via transform (translateY, doesn't affect
+       layout height) plus lifts further on hover, so its rendered top
+       edge sits above this container's own top edge and gets clipped by
+       that auto-generated vertical scroll box unless we reserve real
+       space for it. padding-top is the actual fix; overflow-y is kept
+       explicit anyway as a harmless statement of intent. */
+    overflow-y: visible;
+    padding: 22px 0 8px;
   }
   .stage {
+    /* --lift is the card's permanent steady-state offset (0 normally,
+       -10px for the guardian card below); --hover-lift is the extra,
+       temporary offset added on hover. Both feed the same translateY via
+       calc() so hover and the guardian's resting elevation compose
+       instead of fighting over the single `transform` property. */
+    --lift: 0px;
+    --hover-lift: 0px;
     flex: 1 0 160px;
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 10px;
     padding: 20px 16px;
     position: relative;
+    transform: translateY(calc(var(--lift) + var(--hover-lift)));
+    transition: border-color 180ms ease, background-color 180ms ease,
+                box-shadow 180ms ease, transform 180ms ease;
+  }
+  .stage:hover {
+    --hover-lift: -4px;
+    border-color: var(--accent);
+    background: var(--bg-raised);
+    box-shadow: 0 10px 24px -10px rgba(164, 75, 38, 0.28);
   }
   .stage + .stage { margin-left: 28px; }
   .stage::before {
@@ -164,11 +191,19 @@
   .stage-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
   .stage-desc { font-size: 13px; color: var(--text-dim); }
   .stage.guardian {
+    --lift: -10px;
     border-color: var(--accent-dim);
     background: linear-gradient(180deg, #f7e2cf 0%, var(--bg-card) 100%);
-    transform: translateY(-10px);
     box-shadow: 0 12px 28px -8px rgba(164, 75, 38, 0.3);
     z-index: 1;
+  }
+  /* Keep the Guardian's gradient + stronger glow distinct from the plain
+     flat hover treatment the other 4 cards get, so it still reads as "the
+     gate" even while hovered, on top of its own permanent elevation. */
+  .stage.guardian:hover {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, #f9ecda 0%, var(--bg-card) 100%);
+    box-shadow: 0 16px 34px -10px rgba(164, 75, 38, 0.42);
   }
   .stage.guardian .stage-icon {
     color: var(--accent);
@@ -180,6 +215,40 @@
     font-size: 13px;
     color: var(--text-faint);
     font-family: var(--mono);
+  }
+
+  /* ---- Scroll reveal ----
+     Classes are added by JS only (see the bottom script), never present
+     in the markup itself -- so with JS disabled, or prefers-reduced-motion
+     set, nothing ever gets a hidden initial state and the page just
+     renders fully visible with no animation, no fallback logic needed. */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+  .stage-reveal {
+    /* `transition` is a shorthand -- whichever rule wins the cascade for
+       it applies in full, properties don't merge across rules. Since JS
+       always adds this class on top of .stage, this list has to carry
+       .stage's hover transitions too (border-color/background-color/
+       box-shadow) alongside the reveal's own opacity/transform, or hover
+       would silently stop transitioning smoothly once a card has been
+       revealed. transform itself stays on the slower reveal curve for
+       both the pop-in and the hover lift, rather than juggling two
+       different durations for the same property. */
+    opacity: 0;
+    transform: translateY(calc(var(--lift) + var(--hover-lift) + 14px));
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 180ms ease, background-color 180ms ease,
+                box-shadow 180ms ease;
+  }
+  .stage-reveal.is-visible {
+    opacity: 1;
+    transform: translateY(calc(var(--lift) + var(--hover-lift)));
   }
 
   /* ---- Replay section ---- */
@@ -301,7 +370,8 @@
   }
   table.cmp td { padding: 14px; border-bottom: 1px solid var(--border); }
   table.cmp tr:last-child td { border-bottom: none; }
-  .case-name { font-family: var(--mono); font-size: 13px; }
+  .case-title { font-size: 14px; font-weight: 500; color: var(--text); }
+  .case-id { font-family: var(--mono); font-size: 11px; color: var(--text-faint); margin-top: 2px; }
   .verdict { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-family: var(--mono); }
   .verdict.bad { color: var(--danger); background: var(--danger-bg); }
   .verdict.good { color: var(--safe); background: var(--safe-bg); }
@@ -421,7 +491,8 @@
     <div class="replay-header">
       <div>
         <h2>Same drift, two agents</h2>
-        <h3 style="margin-bottom:6px;">Case <span id="replay-case-name" class="case-name"></span></h3>
+        <h3 style="margin-bottom:4px;">Case <span id="replay-case-title"></span></h3>
+        <div class="case-id" id="replay-case-id"></div>
       </div>
       <div class="replay-controls">
         <button class="ctrl" id="btn-replay">↺ replay</button>
@@ -488,6 +559,18 @@
       ? ` (${dataLossCases.length} of them silent data loss the baseline never flagged)`
       : "");
 
+  // ---- display-only case id formatting ----
+  // Purely cosmetic: turns "08_composite_unique_index" into "Composite Unique
+  // Index" for primary display, with the raw id demoted to a small caption.
+  // No lookup table -- works for any future case id, not just today's 6.
+  function humanizeCaseName(id) {
+    return id
+      .replace(/^\d+_/, "")
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" ");
+  }
+
   // ---- comparison table ----
   const tbody = document.getElementById("cmp-body");
   for (const row of data.comparison) {
@@ -495,7 +578,10 @@
     const bClass = row.baseline === "ok" ? "good" : (row.baseline === "not run" ? "" : "bad");
     const aClass = row.advanced === "success" ? "good" : "bad";
     tr.innerHTML = `
-      <td class="case-name">${row.case}</td>
+      <td>
+        <div class="case-title">${humanizeCaseName(row.case)}</div>
+        <div class="case-id">${row.case}</div>
+      </td>
       <td><span class="verdict ${bClass}">${row.baseline}</span></td>
       <td><span class="verdict ${aClass}">${row.advanced}</span></td>
       <td>${row.improved ? '<span class="improved-mark">✓ fixed</span>' : ''}</td>
@@ -524,7 +610,8 @@
   document.getElementById("hottake-text").textContent = data.hot_take;
 
   // ---- replay ----
-  document.getElementById("replay-case-name").textContent = data.replay_case;
+  document.getElementById("replay-case-title").textContent = humanizeCaseName(data.replay_case);
+  document.getElementById("replay-case-id").textContent = data.replay_case;
   document.getElementById("provenance-note").textContent =
     `Replaying captured trajectories from trajectories/baseline/${data.replay_case}.json ` +
     `and trajectories/advanced/${data.replay_case}.json (not a live API call).`;
@@ -612,6 +699,45 @@
 
   document.getElementById("btn-replay").addEventListener("click", playReplay);
   playReplay();
+
+  // ---- scroll reveal ----
+  // Section-level fade-up on first scroll into view. Deliberately separate
+  // from the .step/.visible mechanism above (different class names, own
+  // observer, own trigger) -- the replay animation stays timer-driven from
+  // page load/button click regardless of scroll position.
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!prefersReducedMotion && "IntersectionObserver" in window) {
+    const sections = document.querySelectorAll(
+      "header.hero, #architecture, #replay, #comparison, #hottake, footer"
+    );
+    sections.forEach((el) => el.classList.add("reveal"));
+
+    const stages = document.querySelectorAll("#architecture .stage");
+    stages.forEach((el) => el.classList.add("stage-reveal"));
+
+    const revealObserver = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          if (entry.target.id === "architecture") {
+            // Stagger by delaying WHEN each card gets is-visible (plain
+            // setTimeout) rather than via CSS transition-delay -- an
+            // inline transition-delay would linger on the element forever
+            // and also delay every later hover transition by the same
+            // amount, since transition-delay applies to all transitioned
+            // properties, not just this one-time reveal.
+            stages.forEach((stage, i) => {
+              setTimeout(() => stage.classList.add("is-visible"), i * 70);
+            });
+          }
+          observer.unobserve(entry.target);
+        });
+      },
+      { threshold: 0.15, rootMargin: "0px 0px -60px 0px" }
+    );
+    sections.forEach((el) => revealObserver.observe(el));
+  }
 })();
 </script>
 </body>
