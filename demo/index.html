@@ -6,31 +6,36 @@
 <title>MigraLoop — Agentic Schema-Drift Reconciler</title>
 <style>
   :root {
-    --bg: #0d1117;
-    --bg-raised: #151b23;
-    --bg-card: #1a212b;
-    --border: #2a3341;
-    --text: #e6edf3;
-    --text-dim: #8b98a8;
-    --text-faint: #5b6674;
-    --accent: #5eead4;
-    --accent-dim: #2dd4bf;
-    --danger: #f87171;
-    --danger-bg: #2a1516;
-    --safe: #4ade80;
-    --safe-bg: #12241a;
+    /* Warm cream/beige-pastel palette. --bg is the lightest surface;
+       --bg-raised and --bg-card step progressively deeper (more tan,
+       not darker-toward-black) so cards read as distinct surfaces. */
+    --bg: #faf6f0;
+    --bg-raised: #f6f0e6;
+    --bg-card: #f2ebe1;
+    --border: #e0d5c4;
+    --text: #3a332c;
+    --text-dim: #706456;
+    --text-faint: #96897a;
+    --accent: #a44b26;
+    --accent-dim: #c9805a;
+    --danger: #a13a2f;
+    --danger-bg: #f8e2df;
+    --safe: #1f7a3d;
+    --safe-bg: #e3f1e5;
+    --sql-bg: #f6e6d6;
     --mono: "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
 
-    /* Aurora glow (hero background only) -- muted teal/indigo/violet built
-       from --accent/--accent-dim plus two neighboring pastel hues, never
-       fully saturated so it reads as ambient light, not a colored shape. */
-    --aurora-indigo: #818cf8;
-    --aurora-violet: #c4b5fd;
-    --aurora-sky: #38bdf8;
+    /* Aurora glow (hero background only) -- pastel peach/blush/gold/sage
+       built from --accent-dim plus three neighboring warm pastels, blended
+       with multiply (not difference, which inverts harshly on a light
+       base) so it reads as a soft warm wash rather than a colored shape. */
+    --aurora-blush: #e8c3b9;
+    --aurora-gold: #ecdcb0;
+    --aurora-sage: #cdd8c0;
     --aurora-glow: repeating-linear-gradient(100deg,
-      var(--accent-dim) 10%, var(--aurora-indigo) 15%, var(--accent) 20%,
-      var(--aurora-violet) 25%, var(--aurora-sky) 30%);
+      var(--accent-dim) 10%, var(--aurora-blush) 15%, var(--aurora-gold) 20%,
+      var(--aurora-sage) 25%, var(--accent-dim) 30%);
     --aurora-mask: repeating-linear-gradient(100deg,
       var(--bg) 0%, var(--bg) 7%, transparent 10%, transparent 12%, var(--bg) 16%);
   }
@@ -63,26 +68,19 @@
     inset: -10px;
     background-image: var(--aurora-mask), var(--aurora-glow);
     background-size: 300% 200%;
-    filter: blur(10px);
-    opacity: 0.3;
+    filter: blur(30px);
+    opacity: 0.55;
+    mix-blend-mode: multiply;
+    animation: aurora 55s linear infinite;
     pointer-events: none;
     mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
   }
-  .aurora-layer::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image: var(--aurora-mask), var(--aurora-glow);
-    background-size: 200% 100%;
-    animation: aurora 55s linear infinite;
-    mix-blend-mode: difference;
-  }
   @keyframes aurora {
-    from { background-position: 50% 50%, 50% 50%; }
-    to   { background-position: 350% 50%, 350% 50%; }
+    from { background-position: 50% 50%; }
+    to   { background-position: 350% 50%; }
   }
   @media (prefers-reduced-motion: reduce) {
-    .aurora-layer::after { animation: none; }
+    .aurora-layer { animation: none; }
   }
   .kicker {
     font-family: var(--mono);
@@ -167,9 +165,9 @@
   .stage-desc { font-size: 13px; color: var(--text-dim); }
   .stage.guardian {
     border-color: var(--accent-dim);
-    background: linear-gradient(180deg, #16332f 0%, var(--bg-card) 100%);
+    background: linear-gradient(180deg, #f7e2cf 0%, var(--bg-card) 100%);
     transform: translateY(-10px);
-    box-shadow: 0 12px 28px -8px rgba(94, 234, 212, 0.35);
+    box-shadow: 0 12px 28px -8px rgba(164, 75, 38, 0.3);
     z-index: 1;
   }
   .stage.guardian .stage-icon {
@@ -246,8 +244,8 @@
   .sql-block {
     margin: 0 0 10px;
     padding: 12px 14px;
-    background: #0a2b28;
-    border-left: 3px solid var(--accent-dim);
+    background: var(--sql-bg);
+    border-left: 3px solid var(--accent);
     border-radius: 4px;
     font-family: var(--mono);
     font-size: 12.5px;
@@ -371,14 +369,14 @@
     <p class="lede">
       Production database schemas drift from ORM models over time. Asking an LLM to
       "just generate a fix" often makes it worse: a single-shot model frequently
-      resolves a rename or type change by dropping the column and recreating it —
-      syntactically fine, <strong>semantically catastrophic</strong>. MigraLoop puts a
+      resolves a rename or type change by dropping the column and recreating it.
+      Syntactically fine, <strong>semantically catastrophic</strong>. MigraLoop puts a
       deterministic, non-AI Data Loss Guardian between "the agent wrote a migration"
       and "the migration is accepted."
     </p>
     <p class="scope-note">
       Built on SQLite (not Postgres) for a disposable, Docker-free sandbox and
-      reproducibility on a judge's machine — see README.md's Scoping Notes for why.
+      reproducibility on a judge's machine. See README.md's Scoping Notes for why.
     </p>
   </header>
 
@@ -416,7 +414,7 @@
         <div class="stage-desc">Retries with a fresh sandbox, up to 3x.</div>
       </div>
     </div>
-    <div class="retry-note">// see the Hot Take below — on this benchmark, the retry loop never actually fired</div>
+    <div class="retry-note">// see the Hot Take below. On this benchmark, the retry loop never fired</div>
   </section>
 
   <section id="replay">
@@ -487,7 +485,7 @@
   document.getElementById("hero-stat-label").textContent =
     `baseline failures fixed by MigraLoop` +
     (dataLossCases.length
-      ? ` — ${dataLossCases.length} of them silent data loss the baseline never flagged`
+      ? ` (${dataLossCases.length} of them silent data loss the baseline never flagged)`
       : "");
 
   // ---- comparison table ----
@@ -529,7 +527,7 @@
   document.getElementById("replay-case-name").textContent = data.replay_case;
   document.getElementById("provenance-note").textContent =
     `Replaying captured trajectories from trajectories/baseline/${data.replay_case}.json ` +
-    `and trajectories/advanced/${data.replay_case}.json — not a live API call.`;
+    `and trajectories/advanced/${data.replay_case}.json (not a live API call).`;
 
   const SQL_KEYWORDS = [
     "CREATE", "TABLE", "DELETE", "FROM", "WHERE", "SELECT", "INSERT", "INTO",
@@ -569,7 +567,7 @@
     } else if (step.input_data && "attempt" in step.input_data) {
       body = step.input_data.prior_error
         ? `attempt ${step.input_data.attempt}, retrying after: ${step.input_data.prior_error}`
-        : `attempt ${step.input_data.attempt} — requesting a migration proposal…`;
+        : `attempt ${step.input_data.attempt}, requesting a migration proposal…`;
     } else {
       const fallback = (step.output_data && Object.keys(step.output_data).length) ? step.output_data
         : (step.input_data && Object.keys(step.input_data).length) ? step.input_data

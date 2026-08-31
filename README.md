@@ -4,13 +4,13 @@ live at : https://maxwell-penguin.github.io/hackmicro1/
 ## The Problem
 
 Production database schemas drift from application ORM models over
-time — manual emergency hotfixes, unmerged branches, legacy migrations
-that never ran. Reconciling that drift by hand is slow and carries
+time (manual emergency hotfixes, unmerged branches, legacy migrations
+that never ran). Reconciling that drift by hand is slow and carries
 real outage risk.
 
 Asking an LLM to "just generate a fix" makes this worse, not better: a
 single-shot model frequently resolves a type mismatch or rename by
-dropping the column and recreating it — syntactically correct,
+dropping the column and recreating it. Syntactically correct,
 semantically catastrophic, silent production data loss.
 
 **Target user:** backend/platform engineers managing relational
@@ -31,7 +31,7 @@ without being explicitly declared as an intentional drop.
 **SQLite, not Postgres.** The pitch and much of the domain language
 here (table locks, `ALTER COLUMN` semantics, online index creation)
 comes from a Postgres mental model. We built the sandbox on SQLite
-instead — it spins up an isolated, disposable database in milliseconds
+instead. It spins up an isolated, disposable database in milliseconds
 with no Docker dependency, which matters for a 3-day solo build and
 for reproducibility on a judge's machine. SQLite's lack of most
 `ALTER TABLE` operations (no `ALTER COLUMN`, no adding constraints to
@@ -51,18 +51,18 @@ tracking, declared row-count decrease, declared column drop).
 
 ## Architecture
 
-1. **State Extractor** — introspects the physical DB schema and the
+1. **State Extractor.** Introspects the physical DB schema and the
    ORM's target schema, produces a structured drift report.
-2. **Migration Synthesizer** — generates migration SQL *and* a
+2. **Migration Synthesizer.** Generates migration SQL *and* a
    `MigrationManifest` declaring anything it's intentionally
    discarding (a deprecated column, a deduplicated row).
-3. **Sandbox Verifier** — applies the migration to an isolated,
+3. **Sandbox Verifier.** Applies the migration to an isolated,
    disposable SQLite database inside an explicit transaction.
-4. **Data Loss Guardian** (deterministic, no LLM) — snapshots database
+4. **Data Loss Guardian** (deterministic, no LLM). Snapshots database
    content before and after, and fails the migration if anything
    disappeared that wasn't declared in the manifest.
 5. **Retry loop** (implemented as a plain loop inside `orchestrator.py`,
-   not a separate class) — on failure (SQL error or
+   not a separate class). On failure (SQL error or
    `DATA_LOSS_DETECTED`), feeds the error back to the Synthesizer for
    a corrected attempt, up to a retry cap.
 
@@ -140,8 +140,8 @@ tracking, declared row-count decrease, declared column drop).
 
 Every one of the 6 advanced cases in `results/advanced_results.json` has
 `"attempts": 1` and an empty `attempt_errors` list. The retry loop in
-`src/orchestrator.py` — re-provision a fresh sandbox, feed the Guardian's
-failure back to the Synthesizer, try again up to `MAX_ATTEMPTS = 3` — never
+`src/orchestrator.py` (re-provision a fresh sandbox, feed the Guardian's
+failure back to the Synthesizer, try again up to `MAX_ATTEMPTS = 3`) never
 fired against the live model. It's exercised directly in
 `tests/test_orchestrator.py` (`case_always_bad`, `case_rename_retry`) with a
 mocked Synthesizer that's scripted to fail then succeed, so the mechanics are
@@ -162,13 +162,13 @@ teaching the model something on a second try. If I deleted the entire retry
 loop and kept only the system prompt and the Guardian as a hard gate, this
 specific 6-case benchmark would score identically.
 
-The honest engineering conclusion isn't "retries don't matter" — a
+The honest engineering conclusion isn't "retries don't matter." A
 harder or more adversarial case set would probably need them, and the
 Guardian's whole design assumes some fraction of attempts will be wrong. It's
 that for a well-scoped, well-understood domain (SQLite DDL, a fixed small set
 of drift shapes), the marginal value of a first attempt built from specific,
 enumerated domain constraints was higher than the marginal value of retry
-sophistication — at least on this benchmark, at this size. If I had 3 more
+sophistication, at least on this benchmark, at this size. If I had 3 more
 days I'd spend them adversarially expanding the benchmark until the retry
 loop actually fires for real, rather than adding more retry logic on top of
 a loop that's currently unproven outside its unit tests.
