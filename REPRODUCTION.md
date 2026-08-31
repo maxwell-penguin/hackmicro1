@@ -97,3 +97,49 @@ upload its `physical.db` and paste the contents of its `target_schema.sql`.
 
 `make clean` removes all of the above plus the generated `physical.db`
 files, if you want to start over.
+
+## Versions, Runtime, and Cost
+
+**Python.** No `.python-version` file is committed. Built and tested against
+**Python 3.13** (3.13.5 locally). The codebase uses `from __future__ import
+annotations` throughout (`src/*.py`, `webapp/app.py`), which is the one
+version-sensitive marker present — that pattern is there specifically so
+built-in generics (`dict[str, dict]`, etc.) work without requiring 3.9+ at
+runtime, so this almost certainly runs fine on 3.9+ too. 3.13 is simply the
+only version actually exercised.
+
+**Packages.** See `requirements.txt` for exact pinned minimum versions —
+not duplicated here so this doc can't drift out of sync with it.
+
+**Runtime (measured, not estimated).** Ran the same per-case calls
+`make baseline` and `make advanced` make (via the real, unmodified
+`src/baseline.py` / `src/orchestrator.py`) against a throwaway copy of
+`benchmarks/`, so the timing is real without touching the committed
+`trajectories/`/`results/` evidence:
+
+| Target | Wall clock | Cases | API calls |
+|---|---|---|---|
+| `make baseline` | ~14.4s | 6 | 6 (one per case) |
+| `make advanced` | ~31.7s | 6 | 8 (one retry chain fired: `05_table_split` took 3 attempts and still ended `failed_max_retries` on this run) |
+
+Expect roughly **45-60 seconds** for both targets back to back. This is
+wall-clock from one measurement on one machine/network — it'll vary with
+Anthropic API latency and with whether the retry loop fires, which (per the
+Hot Take) it usually doesn't but occasionally will since LLM sampling isn't
+deterministic. Confirmed on this same measurement run: the exact case that
+flips (`05_table_split`) is not guaranteed to succeed on every run — the
+committed `trajectories/advanced/05_table_split.json` shows a clean
+first-attempt success, while this measurement's isolated rerun hit 3 failed
+attempts on the same case. That variance is real and expected, not a bug.
+
+**Cost (measured, not estimated).** Same isolated run: **14 real API calls**
+(6 baseline + 8 advanced) used 19,522 input tokens and 3,748 output tokens
+against `claude-sonnet-5` ($2.00 / $10.00 per 1M input/output tokens at
+measurement time) — **≈$0.077 total, ≈$0.006 per case**. Cost scales with
+`MIGRALOOP_MODEL` if you override it (see `.env.example`) and with how often
+the retry loop fires, since each retry attempt is a full additional API
+call. Check
+[Anthropic's Console usage dashboard](https://console.anthropic.com/settings/usage)
+for your own account's actual spend — this repo doesn't log per-call token
+usage anywhere, so the numbers above come from a one-off instrumented
+measurement, not something `make advanced` reports on its own.

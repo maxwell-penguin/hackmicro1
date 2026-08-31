@@ -120,17 +120,31 @@ tracking, declared row-count decrease, declared column drop).
   mode than 08/10 but the same root cause — a single-shot model with no
   SQLite-specific constraints in its prompt — and the advanced prompt's
   explicit list of SQLite `ALTER TABLE` limitations resolves it too.
+- **The Sandbox Verifier's explicit transaction wrapping guards against a
+  specific sqlite3 driver gotcha, not an observed failure in this benchmark.**
+  Python's `sqlite3` module auto-commits DDL statements (`ALTER`/`CREATE`/
+  `DROP`) as it executes them, before a later statement in the same migration
+  fails — so a naive `try/except` around the migration would leave a
+  partially-applied "failed" migration silently committed to the sandbox.
+  `SandboxVerifier.apply_migration` (`src/core/sandbox.py`) sets
+  `isolation_level = None` and wraps every migration in an explicit `BEGIN`/
+  `COMMIT`/`ROLLBACK`, guarded by `test_failed_migration_rolls_back_completely`
+  (`tests/test_sandbox.py`), which asserts an `ADD COLUMN` followed by a
+  failing statement leaves zero trace of the column. This was designed in from
+  the first commit (`95c82bc`) rather than found and patched after a live
+  failure — included here because it's the mechanical prerequisite the next
+  fix depends on.
 - **The orchestrator's per-attempt sandbox re-provisioning fix
   (`e90f86d`) prevents a compounding-failure bug that never triggered in this
   run but was caught by `tests/test_orchestrator.py` before the live run
-  happened.** `SandboxVerifier.apply_migration` only rolls back on a SQL-level
-  error (`src/core/sandbox.py:144-155`, explicit `BEGIN`/`COMMIT`/`ROLLBACK`) —
-  a migration that executes cleanly but trips the Guardian's data-loss check
-  leaves its DDL committed to that sandbox. The orchestrator provisions a fresh
-  sandbox from the original `physical.db` on every retry attempt instead of
-  reusing one across attempts, so a corrected second attempt reasons about the
-  real starting schema instead of the wreckage of the first attempt's partial
-  changes.
+  happened.** The rollback guarantee above only covers a SQL-level error
+  mid-migration — a migration that executes cleanly but trips the Guardian's
+  data-loss check still leaves its DDL committed to that sandbox, since
+  nothing failed at the SQL level to trigger a rollback. The orchestrator
+  provisions a fresh sandbox from the original `physical.db` on every retry
+  attempt instead of reusing one across attempts, so a corrected second
+  attempt reasons about the real starting schema instead of the wreckage of
+  the first attempt's partial changes.
 - All 6 advanced cases succeeded in a single Synthesizer call (`attempts: 1` in
   `results/advanced_results.json` for every case) — the empirical gains above
   came entirely from getting the first attempt right, not from the retry loop
