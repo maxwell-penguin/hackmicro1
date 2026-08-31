@@ -40,6 +40,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -47,8 +48,15 @@ from src.agents.synthesizer import MigrationSynthesizer  # noqa: E402  (must fol
 from src.orchestrator import run_case  # noqa: E402
 
 WEBAPP_DIR = Path(__file__).resolve().parent
+DEMO_DIR = WEBAPP_DIR.parent / "demo"
 
 app = FastAPI(title="MigraLoop (local demo)")
+
+# Static passthrough only, no pipeline logic: lets upload.html's nav link to
+# the static demo page (and vice versa) actually resolve under this server,
+# since demo/index.html otherwise only works opened directly as a file.
+if DEMO_DIR.is_dir():
+    app.mount("/demo", StaticFiles(directory=str(DEMO_DIR), html=True), name="demo")
 
 # In-memory job store. Single-process, single-user, no persistence --
 # restarting the server loses all job history, which is fine here.

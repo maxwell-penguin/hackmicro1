@@ -427,6 +427,8 @@
 
   footer { padding: 40px 0 80px; }
   footer p { font-size: 13px; color: var(--text-faint); font-family: var(--mono); }
+  footer a { color: var(--text-faint); transition: color 180ms ease; }
+  footer a:hover { color: var(--accent); }
 </style>
 </head>
 <body>
@@ -540,6 +542,7 @@
 
   <footer>
     <p>MigraLoop · this page replays committed evaluation data from results/ and trajectories/. No live API calls.</p>
+    <p><a href="http://localhost:8000/">Run it yourself against your own database →</a> (after <code>make web</code>)</p>
   </footer>
 </div>
 
