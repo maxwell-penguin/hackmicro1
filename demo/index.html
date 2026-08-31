@@ -118,7 +118,18 @@
   }
   .stage-title { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
   .stage-desc { font-size: 13px; color: var(--text-dim); }
-  .stage.guardian { border-color: var(--accent-dim); }
+  .stage.guardian {
+    border-color: var(--accent-dim);
+    background: linear-gradient(180deg, #16332f 0%, var(--bg-card) 100%);
+    transform: translateY(-10px);
+    box-shadow: 0 12px 28px -8px rgba(94, 234, 212, 0.35);
+    z-index: 1;
+  }
+  .stage.guardian .stage-icon {
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  .stage.guardian .stage-num { color: var(--accent-dim); }
   .retry-note {
     margin-top: 20px;
     font-size: 13px;
@@ -127,6 +138,14 @@
   }
 
   /* ---- Replay section ---- */
+  #replay {
+    position: relative;
+    background: var(--bg-raised);
+    box-shadow: 0 0 0 100vmax var(--bg-raised);
+    clip-path: inset(0 -100vmax);
+    border-bottom: none;
+    padding: 88px 0;
+  }
   .replay-header { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
   .replay-controls { display: flex; gap: 10px; }
   button.ctrl {
@@ -177,6 +196,26 @@
   }
   .step-body { font-size: 13px; color: var(--text-dim); white-space: pre-wrap; word-break: break-word; }
   .step-body code { font-family: var(--mono); color: var(--text); }
+  .sql-block {
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    background: #0a2b28;
+    border-left: 3px solid var(--accent-dim);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .sql-kw { color: var(--accent); font-weight: 700; }
+  .reasoning-text {
+    font-size: 12.5px;
+    color: var(--text-faint);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
 
   .provenance {
     margin-top: 18px;
@@ -185,6 +224,23 @@
     color: var(--text-faint);
   }
   .provenance::before { content: "◐ "; color: var(--accent-dim); }
+
+  /* ---- Hero stat ---- */
+  .hero-stat { display: flex; align-items: baseline; gap: 20px; margin: 0 0 40px; }
+  .hero-stat-number {
+    font-size: 76px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .hero-stat-label {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 320px;
+    line-height: 1.4;
+  }
 
   /* ---- Comparison table ---- */
   table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -298,6 +354,10 @@
         <div class="stage-desc">Applies the migration to an isolated SQLite copy.</div>
       </div>
       <div class="stage guardian">
+        <svg class="stage-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2 L20 5.5 V11 C20 16.2 16.6 20.3 12 22 C7.4 20.3 4 16.2 4 11 V5.5 Z"/>
+          <path d="M8.5 12 L11 14.5 L15.5 9"/>
+        </svg>
         <div class="stage-num">04</div>
         <div class="stage-title">Data Loss Guardian</div>
         <div class="stage-desc">Deterministic. Rejects undeclared data loss.</div>
@@ -337,6 +397,10 @@
   <section id="comparison">
     <h2>Measured improvement</h2>
     <h3>Baseline vs. advanced, all six cases</h3>
+    <div class="hero-stat">
+      <div class="hero-stat-number" id="hero-stat-number"></div>
+      <div class="hero-stat-label" id="hero-stat-label"></div>
+    </div>
     <table class="cmp">
       <thead>
         <tr><th>Case</th><th>Baseline</th><th>Advanced</th><th>Improved</th></tr>
@@ -366,6 +430,17 @@
 <script>
 (function () {
   const data = DEMO_DATA;
+
+  // ---- hero stat ----
+  const improvedCases = data.comparison.filter((r) => r.improved);
+  const dataLossCases = data.comparison.filter((r) => r.baseline === "DATA LOSS");
+  document.getElementById("hero-stat-number").textContent =
+    `${improvedCases.length}/${data.comparison.length}`;
+  document.getElementById("hero-stat-label").textContent =
+    `baseline failures fixed by MigraLoop` +
+    (dataLossCases.length
+      ? ` — ${dataLossCases.length} of them silent data loss the baseline never flagged`
+      : "");
 
   // ---- comparison table ----
   const tbody = document.getElementById("cmp-body");
@@ -408,14 +483,33 @@
     `Replaying captured trajectories from trajectories/baseline/${data.replay_case}.json ` +
     `and trajectories/advanced/${data.replay_case}.json — not a live API call.`;
 
+  const SQL_KEYWORDS = [
+    "CREATE", "TABLE", "DELETE", "FROM", "WHERE", "SELECT", "INSERT", "INTO",
+    "VALUES", "UPDATE", "SET", "DROP", "ALTER", "ADD", "COLUMN", "RENAME",
+    "TO", "UNIQUE", "INDEX", "ON", "NOT", "NULL", "PRIMARY", "KEY", "GROUP",
+    "BY", "ORDER", "IN", "OR", "AND", "IGNORE", "MIN", "MAX", "COUNT", "AS",
+    "CAST", "DEFAULT", "CHECK", "CONSTRAINT", "REFERENCES", "FOREIGN",
+  ];
+  const SQL_KEYWORD_RE = new RegExp("\\b(" + SQL_KEYWORDS.join("|") + ")\\b", "gi");
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function highlightSQL(sql) {
+    return escapeHtml(sql).replace(SQL_KEYWORD_RE, '<span class="sql-kw">$1</span>');
+  }
+
   function describeStep(step) {
     const agent = step.agent.replace(/_/g, " ");
     let body = "";
+    let sqlHtml = null;
+    let reasoning = null;
     if (step.kind === "error") {
       body = step.error_message || "";
     } else if (step.output_data && step.output_data.migration_sql) {
-      body = "<code>" + step.output_data.migration_sql.trim() + "</code>";
-      if (step.output_data.reasoning) body += "\n\n" + step.output_data.reasoning;
+      sqlHtml = highlightSQL(step.output_data.migration_sql.trim());
+      reasoning = step.output_data.reasoning || null;
     } else if (step.output_data && step.output_data.summary) {
       body = step.output_data.summary;
     } else if (step.output_data && "success" in step.output_data) {
@@ -434,17 +528,21 @@
         : null;
       body = fallback ? JSON.stringify(fallback) : "";
     }
-    return { agent, body };
+    return { agent, body, sqlHtml, reasoning };
   }
 
   function renderTrack(containerId, trajectory) {
     const container = document.getElementById(containerId);
     container.innerHTML = "";
     return trajectory.steps.map((step) => {
-      const { agent, body } = describeStep(step);
+      const { agent, body, sqlHtml, reasoning } = describeStep(step);
       const el = document.createElement("div");
       el.className = "step" + (step.kind === "error" ? " kind-error" : "");
-      el.innerHTML = `<div class="step-agent">${agent} · ${step.action}</div><div class="step-body">${body}</div>`;
+      const bodyHtml = sqlHtml
+        ? `<pre class="sql-block">${sqlHtml}</pre>` +
+          (reasoning ? `<div class="reasoning-text">${escapeHtml(reasoning)}</div>` : "")
+        : `<div class="step-body">${body}</div>`;
+      el.innerHTML = `<div class="step-agent">${agent} · ${step.action}</div>${bodyHtml}`;
       container.appendChild(el);
       return el;
     });
