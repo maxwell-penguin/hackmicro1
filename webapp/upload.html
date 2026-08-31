@@ -31,14 +31,28 @@
     font-family: var(--sans);
     line-height: 1.5;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 32px 96px; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 40px 32px 96px; }
+
+  /* ---- Nav ---- */
+  .nav-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+  .nav-link {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-faint);
+    text-decoration: none;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 11px;
+    transition: color 180ms ease, border-color 180ms ease;
+  }
+  .nav-link:hover { color: var(--accent); border-color: var(--accent-dim); }
+
   .kicker {
     font-family: var(--mono);
     font-size: 13px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
     color: var(--accent);
-    margin-bottom: 10px;
   }
   h1 { font-size: 34px; letter-spacing: -0.01em; margin: 0 0 10px; font-weight: 650; }
   .lede { color: var(--text-dim); font-size: 15px; margin: 0 0 32px; max-width: 620px; }
@@ -51,22 +65,33 @@
     margin: 0 0 40px;
   }
 
-  form {
+  /* ---- Form ---- */
+  form { display: flex; flex-direction: column; gap: 18px; }
+  .field-card {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
+    padding: 20px;
   }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
-  .field-hint { font-size: 12px; color: var(--text-faint); margin-top: 4px; }
-  input[type="file"] {
-    font-family: var(--sans);
-    font-size: 13px;
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .field-hint { font-size: 12px; color: var(--text-faint); margin-top: 8px; }
+
+  input[type="file"] { font-family: var(--sans); font-size: 13px; color: var(--text-dim); }
+  input[type="file"]::file-selector-button {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--bg);
     color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 14px;
+    margin-right: 12px;
+    cursor: pointer;
+    transition: border-color 180ms ease, color 180ms ease;
   }
+  input[type="file"]::file-selector-button:hover { border-color: var(--accent); color: var(--accent); }
+
   textarea {
     width: 100%;
     min-height: 140px;
@@ -78,7 +103,15 @@
     border-radius: 6px;
     padding: 10px 12px;
     resize: vertical;
+    transition: border-color 180ms ease, box-shadow 180ms ease;
   }
+  textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(164, 75, 38, 0.14);
+  }
+  textarea::placeholder { color: var(--text-faint); }
+
   button.run {
     align-self: flex-start;
     font-family: var(--mono);
@@ -90,29 +123,40 @@
     border-radius: 6px;
     padding: 10px 20px;
     cursor: pointer;
+    transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
   }
-  button.run:hover { background: var(--accent-dim); }
-  button.run:disabled { opacity: 0.5; cursor: default; }
+  /* Mirrors the architecture stage cards' hover language on the main demo:
+     a small lift plus a soft accent-colored glow, not just a color swap. */
+  button.run:hover:not(:disabled) {
+    background: var(--accent-dim);
+    box-shadow: 0 10px 24px -10px rgba(164, 75, 38, 0.4);
+    transform: translateY(-2px);
+  }
+  button.run:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
 
-  #status {
-    margin-top: 28px;
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--text-dim);
+  /* ---- Run states ---- */
+  .status-card {
     display: none;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
   }
-  #status.active { display: flex; }
+  .status-card.active { display: flex; }
   .spinner {
-    width: 14px;
-    height: 14px;
+    flex: none;
+    width: 16px;
+    height: 16px;
     border: 2px solid var(--border);
     border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { font-family: var(--mono); font-size: 13px; color: var(--text-dim); }
 
   #error-box {
     display: none;
@@ -121,10 +165,17 @@
     background: var(--danger-bg);
     border: 1px solid var(--danger);
     border-radius: 8px;
-    color: var(--danger);
-    font-size: 13px;
-    white-space: pre-wrap;
   }
+  .error-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--danger);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .error-message { color: var(--danger); font-size: 13px; white-space: pre-wrap; }
 
   #results { display: none; margin-top: 32px; }
   .outcome-banner {
@@ -140,6 +191,13 @@
   .outcome-banner.bad { background: var(--danger-bg); color: var(--danger); }
   .outcome-banner.neutral { background: var(--bg-card); color: var(--text-dim); border: 1px solid var(--border); }
 
+  /* Same badge the main demo's comparison table uses for baseline/advanced
+     verdicts, reused here for the Guardian's specific pass/fail call --
+     distinct from the outcome-banner above, which is the overall run result. */
+  .verdict { display: inline-block; padding: 3px 9px; border-radius: 5px; font-size: 12px; font-family: var(--mono); margin-left: 10px; }
+  .verdict.bad { color: var(--danger); background: var(--danger-bg); }
+  .verdict.good { color: var(--safe); background: var(--safe-bg); }
+
   .no-drift-note {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -148,6 +206,7 @@
     color: var(--text-dim);
     font-size: 14px;
   }
+  .no-drift-note::before { content: "✓ "; color: var(--safe); font-weight: 700; }
 
   .track { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
   .steps { padding: 8px; }
@@ -183,7 +242,10 @@
 <body>
 
 <div class="wrap">
-  <div class="kicker">MigraLoop</div>
+  <div class="nav-row">
+    <div class="kicker">MigraLoop</div>
+    <a class="nav-link" href="/demo/">View the demo &amp; evidence →</a>
+  </div>
   <h1>Run against your own database</h1>
   <p class="lede">
     Upload a physical (drifted) SQLite database and paste the target schema SQL.
@@ -196,12 +258,12 @@
   </p>
 
   <form id="run-form">
-    <div>
+    <div class="field-card">
       <label for="physical_db">Physical database (.db / .sqlite)</label>
       <input type="file" id="physical_db" name="physical_db" accept=".db,.sqlite,.sqlite3" required />
       <div class="field-hint">The current, drifted database as it actually exists.</div>
     </div>
-    <div>
+    <div class="field-card">
       <label for="target_schema_sql">Target schema SQL</label>
       <textarea id="target_schema_sql" name="target_schema_sql" placeholder="CREATE TABLE users (id INTEGER PRIMARY KEY, ...);" required></textarea>
       <div class="field-hint">What the schema should look like -- one or more CREATE TABLE statements.</div>
@@ -209,15 +271,18 @@
     <button type="submit" class="run" id="run-btn">Run MigraLoop</button>
   </form>
 
-  <div id="status">
+  <div id="status" class="status-card">
     <div class="spinner"></div>
-    <span id="status-text">Running…</span>
+    <span id="status-text" class="status-text">Running…</span>
   </div>
 
-  <div id="error-box"></div>
+  <div id="error-box">
+    <div class="error-label">Error</div>
+    <div class="error-message" id="error-message"></div>
+  </div>
 
   <div id="results">
-    <div id="outcome-banner" class="outcome-banner"></div>
+    <div id="outcome-banner" class="outcome-banner"></div><span id="guardian-verdict"></span>
     <div id="no-drift-note" class="no-drift-note" style="display:none;"></div>
     <div id="track" class="track" style="display:none;">
       <div class="steps" id="steps"></div>
@@ -232,8 +297,10 @@
   const statusEl = document.getElementById("status");
   const statusText = document.getElementById("status-text");
   const errorBox = document.getElementById("error-box");
+  const errorMessage = document.getElementById("error-message");
   const resultsEl = document.getElementById("results");
   const outcomeBanner = document.getElementById("outcome-banner");
+  const guardianVerdict = document.getElementById("guardian-verdict");
   const noDriftNote = document.getElementById("no-drift-note");
   const trackEl = document.getElementById("track");
   const stepsEl = document.getElementById("steps");
@@ -262,10 +329,11 @@
     stepsEl.innerHTML = "";
     outcomeBanner.textContent = "";
     outcomeBanner.className = "outcome-banner";
+    guardianVerdict.innerHTML = "";
   }
 
   function showError(message) {
-    errorBox.textContent = message;
+    errorMessage.textContent = message;
     errorBox.style.display = "block";
   }
 
@@ -297,6 +365,17 @@
     return el;
   }
 
+  function renderGuardianVerdict(steps, outcome) {
+    const guardianFailed = steps.some((s) => s.agent === "data_loss_guardian" && s.kind === "error");
+    if (guardianFailed) {
+      guardianVerdict.innerHTML = '<span class="verdict bad">GUARDIAN: DATA_LOSS_DETECTED</span>';
+    } else if (outcome === "success") {
+      guardianVerdict.innerHTML = '<span class="verdict good">GUARDIAN: PASS</span>';
+    }
+    // else: Guardian never ran (e.g. a persistent SQL error before it was
+    // reached) -- no badge rather than a misleading pass/fail claim.
+  }
+
   function renderResult(result) {
     resultsEl.style.display = "block";
 
@@ -314,6 +393,7 @@
     outcomeBanner.classList.add(isGood ? "good" : "bad");
 
     const steps = (result.trajectory && result.trajectory.steps) || [];
+    renderGuardianVerdict(steps, result.outcome);
     trackEl.style.display = "block";
     steps.forEach((step) => stepsEl.appendChild(renderStep(step)));
   }
@@ -334,17 +414,22 @@
       }
       const { job_id } = await runResp.json();
 
-      statusText.textContent =
-        "Running the full pipeline (real Anthropic API call) — this can take 10–30s…";
-
       // Simplest workable approach for local, single-user progress: poll a
       // coarse queued/running/done status rather than build out streaming --
       // run_case() is one blocking call with no progress hook to stream from
-      // anyway (see webapp/app.py's module docstring).
+      // anyway (see webapp/app.py's module docstring). Status text reflects
+      // the real backend state, not fabricated step-by-step progress.
       const poll = async () => {
         const statusResp = await fetch(`/api/status/${job_id}`);
         if (!statusResp.ok) throw new Error(`Lost track of job ${job_id}`);
         const job = await statusResp.json();
+
+        if (job.status === "queued") {
+          statusText.textContent = "Queued…";
+        } else if (job.status === "running") {
+          statusText.textContent =
+            "Running the pipeline (real Anthropic API call) — typically 10–30s…";
+        }
 
         if (job.status === "done") {
           statusEl.classList.remove("active");
