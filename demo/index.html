@@ -21,6 +21,18 @@
     --safe-bg: #12241a;
     --mono: "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+
+    /* Aurora glow (hero background only) -- muted teal/indigo/violet built
+       from --accent/--accent-dim plus two neighboring pastel hues, never
+       fully saturated so it reads as ambient light, not a colored shape. */
+    --aurora-indigo: #818cf8;
+    --aurora-violet: #c4b5fd;
+    --aurora-sky: #38bdf8;
+    --aurora-glow: repeating-linear-gradient(100deg,
+      var(--accent-dim) 10%, var(--aurora-indigo) 15%, var(--accent) 20%,
+      var(--aurora-violet) 25%, var(--aurora-sky) 30%);
+    --aurora-mask: repeating-linear-gradient(100deg,
+      var(--bg) 0%, var(--bg) 7%, transparent 10%, transparent 12%, var(--bg) 16%);
   }
   * { box-sizing: border-box; }
   body {
@@ -34,8 +46,43 @@
 
   /* ---- Hero ---- */
   header.hero {
+    position: relative;
+    overflow: hidden;
     padding: 96px 0 64px;
     border-bottom: 1px solid var(--border);
+  }
+  /* Keep all real hero content above the aurora layer regardless of DOM
+     order -- z-index:auto positioned/absolute layers paint at stacking
+     level 0, so an explicit z-index:1 here is enough to sit on top. */
+  header.hero > *:not(.aurora-layer) {
+    position: relative;
+    z-index: 1;
+  }
+  .aurora-layer {
+    position: absolute;
+    inset: -10px;
+    background-image: var(--aurora-mask), var(--aurora-glow);
+    background-size: 300% 200%;
+    filter: blur(10px);
+    opacity: 0.3;
+    pointer-events: none;
+    mask-image: radial-gradient(ellipse at 100% 0%, black 10%, transparent 70%);
+  }
+  .aurora-layer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--aurora-mask), var(--aurora-glow);
+    background-size: 200% 100%;
+    animation: aurora 55s linear infinite;
+    mix-blend-mode: difference;
+  }
+  @keyframes aurora {
+    from { background-position: 50% 50%, 50% 50%; }
+    to   { background-position: 350% 50%, 350% 50%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-layer::after { animation: none; }
   }
   .kicker {
     font-family: var(--mono);
@@ -318,6 +365,7 @@
 
 <div class="wrap">
   <header class="hero">
+    <div class="aurora-layer" aria-hidden="true"></div>
     <div class="kicker">MigraLoop</div>
     <h1>Schema drift is inevitable.<br>Silent data loss shouldn't be.</h1>
     <p class="lede">
