@@ -7,3 +7,9 @@ typer>=0.9.0
 rich>=13.0.0
 pytest>=8.0.0
 python-dotenv>=1.0.0
+
+# webapp/ -- local-only demo UI wrapping the pipeline above, not a
+# production service (see webapp/app.py's module docstring).
+fastapi>=0.110.0
+uvicorn>=0.29.0
+python-multipart>=0.0.9

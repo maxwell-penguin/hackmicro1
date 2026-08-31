@@ -67,7 +67,25 @@ it only replays the captured evaluation run. Re-run `make demo` any time
 `results/`, `trajectories/`, or README.md's Hot Take section changes, so the
 page can't drift out of sync with the real evidence.
 
-## 7. Where to find the output
+## 7. Run the local web UI (upload your own database)
+
+```bash
+make web
+```
+
+Starts a local-only FastAPI server at http://localhost:8000 — no auth, no
+rate limiting, not meant to be exposed beyond your own machine. Open that
+URL, upload a `.db`/`.sqlite` file (the physical/drifted database) and paste
+the target schema SQL, then click "Run MigraLoop". It calls the same
+`src/orchestrator.run_case()` used by `make advanced`, with a real
+`MigrationSynthesizer()` — a real, billed Anthropic API call — and shows the
+drift report, synthesized migration SQL, and Guardian verdict once it
+finishes (typically 10-30s). Requires `ANTHROPIC_API_KEY` in `.env` (step 4).
+
+You can try it against a known-good case, e.g. `benchmarks/02_rename_column_with_data/`:
+upload its `physical.db` and paste the contents of its `target_schema.sql`.
+
+## 8. Where to find the output
 
 - `results/baseline_results.json`, `results/advanced_results.json` — per-case
   structured outcomes (success/error, data-loss detection, attempt counts).
