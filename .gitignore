@@ -5,3 +5,8 @@ __pycache__/
 *.db
 .DS_Store
 .pytest_cache/
+
+# Ephemeral trajectories written by real end-user runs through webapp/app.py
+# (see its module docstring) -- distinct from the 6 committed benchmark
+# trajectories, never meant to be committed themselves.
+trajectories/advanced/web_*.json
